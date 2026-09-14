@@ -1,0 +1,327 @@
+openapi: 3.0.3
+info:
+  title: Expense API
+  version: 0.1.0
+  description: Expense claim submission, approval, and payroll export.
+servers:
+  - url: /
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  parameters:
+    UserId:
+      name: X-User-Id
+      in: header
+      required: true
+      description: caller identity injected by the gateway from the validated token
+      schema: { type: string }
+    ClaimId:
+      name: claimId
+      in: path
+      required: true
+      schema: { type: string }
+    EmployeeId:
+      name: employeeId
+      in: path
+      required: true
+      schema: { type: string }
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: integer, description: HTTP or application error code }
+        message: { type: string, description: short human-readable label }
+        description: { type: string, description: detailed explanation }
+        moreInfo: { type: string, description: URI to documentation }
+    Employee:
+      type: object
+      required: [id, name, email, role]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string }
+        role: { type: string, enum: [Employee, Manager, Finance, Admin] }
+        managerId: { type: string, nullable: true }
+    ExpenseClaim:
+      type: object
+      required: [id, employeeId, amount, category, expenseDate, status]
+      properties:
+        id: { type: string }
+        employeeId: { type: string }
+        amount: { type: number, format: double }
+        category: { type: string, enum: [Travel, Meals, Lodging, Supplies, Other] }
+        expenseDate: { type: string, format: date }
+        description: { type: string }
+        status: { type: string, enum: [pending, approved, rejected] }
+        receiptUrl: { type: string, nullable: true }
+        decisionComment: { type: string, nullable: true }
+        decidedBy: { type: string, nullable: true }
+        decidedAt: { type: string, format: date-time, nullable: true }
+        exported: { type: boolean }
+        createdAt: { type: string, format: date-time }
+    NewExpenseClaim:
+      type: object
+      required: [amount, category, expenseDate]
+      properties:
+        amount: { type: number, format: double }
+        category: { type: string, enum: [Travel, Meals, Lodging, Supplies, Other] }
+        expenseDate: { type: string, format: date }
+        description: { type: string }
+    ExpenseClaimUpdate:
+      type: object
+      properties:
+        amount: { type: number, format: double }
+        category: { type: string, enum: [Travel, Meals, Lodging, Supplies, Other] }
+        expenseDate: { type: string, format: date }
+        description: { type: string }
+    ClaimDecision:
+      type: object
+      required: [decision]
+      properties:
+        decision: { type: string, enum: [approved, rejected] }
+        comment: { type: string }
+    ReceiptUploadUrl:
+      type: object
+      required: [uploadUrl, fileUrl]
+      properties:
+        uploadUrl: { type: string, description: presigned S3 PUT URL the client uploads the file to }
+        fileUrl: { type: string, description: the resulting object URL to attach to the claim }
+    ExportBatch:
+      type: object
+      required: [id, exportedBy, exportedAt, fileUrl]
+      properties:
+        id: { type: string }
+        exportedBy: { type: string }
+        exportedAt: { type: string, format: date-time }
+        fileUrl: { type: string, description: URL to download the generated CSV }
+    ManagerAssignment:
+      type: object
+      required: [managerId]
+      properties:
+        managerId: { type: string }
+security:
+  - bearerAuth: []
+paths:
+  /expense-claims:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      operationId: listExpenseClaims
+      summary: List expense claims visible to the caller, filterable by status/employee/export state
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [pending, approved, rejected] }
+        - name: employeeId
+          in: query
+          schema: { type: string }
+        - name: exported
+          in: query
+          schema: { type: boolean }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20, maximum: 100 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        '200':
+          description: matching claims
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [count, data]
+                properties:
+                  count: { type: integer, description: total matching items }
+                  next: { type: string, nullable: true, description: relative URI of the next page }
+                  previous: { type: string, nullable: true, description: relative URI of the previous page }
+                  data: { type: array, items: { $ref: '#/components/schemas/ExpenseClaim' } }
+        '401':
+          description: not authenticated
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    post:
+      operationId: submitExpenseClaim
+      summary: Submit a new expense claim
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/NewExpenseClaim' } }
+      responses:
+        '201':
+          description: claim created as pending
+          content: { application/json: { schema: { $ref: '#/components/schemas/ExpenseClaim' } } }
+        '400':
+          description: invalid claim data
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+        '401':
+          description: not authenticated
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+  /expense-claims/{claimId}:
+    parameters:
+      - $ref: '#/components/parameters/ClaimId'
+      - $ref: '#/components/parameters/UserId'
+    get:
+      operationId: getExpenseClaim
+      summary: Get a single expense claim
+      responses:
+        '200':
+          description: the claim
+          content: { application/json: { schema: { $ref: '#/components/schemas/ExpenseClaim' } } }
+        '404':
+          description: claim not found
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    patch:
+      operationId: updateExpenseClaim
+      summary: Edit a claim while it is still pending
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/ExpenseClaimUpdate' } }
+      responses:
+        '200':
+          description: updated claim
+          content: { application/json: { schema: { $ref: '#/components/schemas/ExpenseClaim' } } }
+        '400':
+          description: claim is not pending, so it cannot be edited
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+        '403':
+          description: not the owning employee
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+        '404':
+          description: claim not found
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    delete:
+      operationId: withdrawExpenseClaim
+      summary: Withdraw a claim while it is still pending
+      responses:
+        '204':
+          description: withdrawn
+        '400':
+          description: claim is not pending, so it cannot be withdrawn
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+        '404':
+          description: claim not found
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+  /expense-claims/{claimId}/receipt-upload-url:
+    parameters:
+      - $ref: '#/components/parameters/ClaimId'
+      - $ref: '#/components/parameters/UserId'
+    post:
+      operationId: createReceiptUploadUrl
+      summary: Get a presigned URL to upload a receipt file for a claim
+      responses:
+        '200':
+          description: presigned upload URL
+          content: { application/json: { schema: { $ref: '#/components/schemas/ReceiptUploadUrl' } } }
+        '404':
+          description: claim not found
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+  /expense-claims/{claimId}/decision:
+    parameters:
+      - $ref: '#/components/parameters/ClaimId'
+      - $ref: '#/components/parameters/UserId'
+    post:
+      operationId: decideExpenseClaim
+      summary: Approve or reject a claim as the assigned manager
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/ClaimDecision' } }
+      responses:
+        '200':
+          description: claim decided and the employee notified
+          content: { application/json: { schema: { $ref: '#/components/schemas/ExpenseClaim' } } }
+        '400':
+          description: claim is not pending
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+        '403':
+          description: not this claim's assigned manager
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+        '404':
+          description: claim not found
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+  /export-batches:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      operationId: listExportBatches
+      summary: List past payroll export batches
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20, maximum: 100 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        '200':
+          description: past export batches
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [count, data]
+                properties:
+                  count: { type: integer, description: total matching items }
+                  next: { type: string, nullable: true, description: relative URI of the next page }
+                  previous: { type: string, nullable: true, description: relative URI of the previous page }
+                  data: { type: array, items: { $ref: '#/components/schemas/ExportBatch' } }
+    post:
+      operationId: createExportBatch
+      summary: Export all approved, un-exported claims as a downloadable CSV and mark them exported
+      responses:
+        '201':
+          description: export batch created
+          content: { application/json: { schema: { $ref: '#/components/schemas/ExportBatch' } } }
+        '400':
+          description: no approved un-exported claims to export
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+  /employees:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    get:
+      operationId: listEmployees
+      summary: List employees and their assigned manager
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20, maximum: 100 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        '200':
+          description: employees
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [count, data]
+                properties:
+                  count: { type: integer, description: total matching items }
+                  next: { type: string, nullable: true, description: relative URI of the next page }
+                  previous: { type: string, nullable: true, description: relative URI of the previous page }
+                  data: { type: array, items: { $ref: '#/components/schemas/Employee' } }
+  /employees/{employeeId}/manager:
+    parameters:
+      - $ref: '#/components/parameters/EmployeeId'
+      - $ref: '#/components/parameters/UserId'
+    patch:
+      operationId: assignEmployeeManager
+      summary: Assign or change an employee's fixed approving manager
+      requestBody:
+        required: true
+        content:
+          application/json: { schema: { $ref: '#/components/schemas/ManagerAssignment' } }
+      responses:
+        '200':
+          description: updated employee
+          content: { application/json: { schema: { $ref: '#/components/schemas/Employee' } } }
+        '403':
+          description: caller is not an Admin
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+        '404':
+          description: employee not found
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }

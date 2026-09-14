@@ -88,8 +88,8 @@ do their job.
 
 ## Open Questions
 
-1. What exact columns/format does finance's payroll system expect in the
-exported file? Using a generic CSV (employee, amount, category, date,
+1. What exact columns/format does finance's payroll system expect in the  
+exported file? Using a generic CSV (employee, amount, category, date,  
 description) until finance specifies otherwise.
 
 ## Further Notes

@@ -1,0 +1,19 @@
+{
+  "name": "expense-api",
+  "type": "service",
+  "version": "0.1.0",
+  "language": "Ballerina",
+  "buildpack": "docker",
+  "appPath": "expense-api",
+  "entrypoint": "deployment/service",
+  "exposure": "intranet",
+  "dependencies": [
+    { "kind": "platform-resource", "name": "expense-db", "resourceType": "postgres-cnpg" },
+    { "kind": "platform-resource", "name": "user-auth", "resourceType": "thunder-app" },
+    { "kind": "external", "name": "aws-s3", "description": "Stores receipt files uploaded with a claim, and generates presigned upload/download URLs for the web app." },
+    { "kind": "external", "name": "resend", "description": "Sends the employee an email when their claim is approved or rejected." }
+  ],
+  "description": "Owns expense claims, manager assignments, and payroll export batches: create/list/edit/withdraw claims, manager approve/reject decisions, receipt presigned-URL issuance via aws-s3, approval-outcome emails via resend, and generating/marking payroll export files for finance. Does not send emails other than claim decision notifications, and does not integrate with a named payroll system — export is a downloadable file only.",
+  "stories": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+  "skillsPinned": ["openapi-conventions", "ballerina", "api-management", "thunder-authentication"]
+}

@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "coldStartRole": "Employee",
+  "publicComponents": [],
+  "roles": [
+    {
+      "name": "Employee",
+      "description": "Submits expense claims, attaches receipts, tracks claim status, and edits and resubmits rejected claims.",
+      "stories": [1, 2, 3, 4, 5],
+      "grantedBy": "first sign-in",
+      "permissions": [
+        { "component": "expense-api", "actions": ["create claim", "read own claims", "update own pending claim", "withdraw own pending claim"] },
+        { "component": "expense-webapp", "screens": ["My Claims", "Submit Claim", "Claim Detail"] }
+      ]
+    },
+    {
+      "name": "Manager",
+      "description": "Reviews claims submitted by their direct reports and approves or rejects each one.",
+      "stories": [6, 7],
+      "grantedBy": "Admin",
+      "permissions": [
+        { "component": "expense-api", "actions": ["read team claims", "approve claim", "reject claim"] },
+        { "component": "expense-webapp", "screens": ["Approval Queue", "Claim Detail"] }
+      ]
+    },
+    {
+      "name": "Finance",
+      "description": "Reviews approved expense claims across the organization and exports them for payroll.",
+      "stories": [8, 9, 10],
+      "grantedBy": "Admin",
+      "permissions": [
+        { "component": "expense-api", "actions": ["read approved claims", "create export batch"] },
+        { "component": "expense-webapp", "screens": ["Export Queue"] }
+      ]
+    },
+    {
+      "name": "Admin",
+      "description": "Manages the compliance catalog and manages users and their role assignments; full visibility across the hub.",
+      "stories": [11],
+      "grantedBy": "Admin",
+      "permissions": [
+        { "component": "expense-api", "actions": ["assign manager to employee"] },
+        { "component": "expense-webapp", "screens": ["Manager Assignments"] }
+      ]
+    }
+  ],
+  "testUsers": [
+    { "username": "test-employee", "role": "Employee" },
+    { "username": "test-manager", "role": "Manager" },
+    { "username": "test-finance", "role": "Finance" },
+    { "username": "test-admin", "role": "Admin" }
+  ],
+  "thunder": {
+    "name": "Expense Tracker",
+    "type": "browser",
+    "scopes": "openid profile email group ou"
+  }
+}

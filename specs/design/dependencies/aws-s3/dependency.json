@@ -1,0 +1,5 @@
+{
+  "name": "aws-s3",
+  "source": "org",
+  "description": "An AWS S3 bucket used as durable object storage for files that a project needs to persist — uploads, generated documents, exports, and any other binary or blob content, including images, PDFs, spreadsheets, and other document types. Use an AWS SDK S3 client configured with the injected region and credentials; construct object keys with a per-project prefix. Use PutObject to persist a file, GetObject to retrieve it, and DeleteObject to remove it. Never proxy raw file bytes from the browser through the backend with the AWS secret exposed — the backend generates a short-lived presigned URL (PutObject/GetObject) and returns only that URL, so the caller uploads/downloads directly with no AWS credentials reaching it. Documentation: https://docs.aws.amazon.com/AmazonS3/latest/userguide/ShareObjectPreSignedURL.html"
+}

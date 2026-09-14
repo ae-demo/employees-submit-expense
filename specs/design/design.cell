@@ -1,0 +1,19 @@
+title Employees Submit Expense
+
+component expense-webapp as "Expense Tracker" web-application
+component expense-api as "Expense API" service
+component expense-db as "Expense Database" database
+
+east user-auth as "Thunder Auth" identity-server
+south aws-s3 as "AWS S3" service
+south resend as "Resend Email" service
+
+north -> expense-webapp
+
+expense-webapp -> expense-api
+expense-webapp -> user-auth
+
+expense-api -> user-auth
+expense-api -> expense-db
+expense-api -> aws-s3
+expense-api -> resend
