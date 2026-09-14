@@ -29,28 +29,28 @@ payroll; marks claims as exported once handled.
 ## User Stories
 
 1. As an Employee, I want to submit an expense claim with an amount, category,
- date, and description, so that I can request reimbursement.
+date, and description, so that I can request reimbursement.
 2. As an Employee, I want to optionally attach a receipt file to a claim, so
- that I have documentation backing the expense.
+that I have documentation backing the expense.
 3. As an Employee, I want to view the status of all my submitted claims
- (pending, approved, rejected), so that I know where each one stands.
+(pending, approved, rejected), so that I know where each one stands.
 4. As an Employee, I want to edit or withdraw a claim while it is still
- pending, so that I can fix mistakes or cancel a claim before it is
- reviewed.
+pending, so that I can fix mistakes or cancel a claim before it is
+reviewed.
 5. As an Employee, I want to be notified when my claim is approved or
- rejected, so that I know the outcome without checking the app.
+rejected, so that I know the outcome without checking the app.
 6. As a Manager, I want to see a list of pending claims from the employees
- assigned to me, so that I can review them.
+assigned to me, so that I can review them.
 7. As a Manager, I want to approve or reject a claim, optionally with a
- comment, so that the employee understands the decision.
+comment, so that the employee understands the decision.
 8. As a Finance user, I want to see all approved claims that have not yet
- been exported, so that I can prepare a payroll run.
+been exported, so that I can prepare a payroll run.
 9. As a Finance user, I want to export approved, un-exported claims as a
- downloadable file, so that I can load them into our payroll system.
+downloadable file, so that I can load them into our payroll system.
 10. As a Finance user, I want exported claims marked as exported, so that
- they are not included in a future export.
+they are not included in a future export.
 11. As an Admin, I want to assign each employee to a fixed approving manager,
- so that claims route to the correct reviewer.
+so that claims route to the correct reviewer.
 
 ## Product Decisions
 
@@ -69,11 +69,11 @@ registered external resource.
 - **Notifications**: approval/rejection notifications are sent by email via
 the organization's `resend` registered external resource.
 - **Expense categories**: claims use a fixed starter set of categories —
-Travel, Meals, Lodging, Supplies, Other. *assumed*
+Travel, Meals, Lodging, Supplies, Other.
 - **Currency**: all claims are submitted and reported in a single company
-currency; there is no multi-currency conversion. *assumed*
+currency; there is no multi-currency conversion.
 - **Claim editing**: an employee may edit or withdraw a claim only while it
-is still pending; once a manager decides, it is locked. *assumed*
+is still pending; once a manager decides, it is locked.
 
 ## Out of Scope
 
@@ -89,8 +89,8 @@ do their job.
 ## Open Questions
 
 1. What exact columns/format does finance's payroll system expect in the
- exported file? Using a generic CSV (employee, amount, category, date,
- description) until finance specifies otherwise.
+exported file? Using a generic CSV (employee, amount, category, date,
+description) until finance specifies otherwise.
 
 ## Further Notes
 
