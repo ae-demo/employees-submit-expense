@@ -6,7 +6,6 @@ component expense-db as "Expense Database" database
 
 east user-auth as "Thunder Auth" identity-server
 south email-service as "Email Service" service
-south aws-s3 as "Receipt Storage" service
 
 north -> expense-webapp
 
@@ -15,4 +14,3 @@ expense-webapp -> user-auth
 expense-api -> user-auth
 expense-api -> expense-db
 expense-api -> email-service
-expense-api -> aws-s3

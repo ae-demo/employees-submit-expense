@@ -166,24 +166,17 @@ components:
         description: { type: string }
     Receipt:
       type: object
-      required: [id, fileName, viewUrl]
+      required: [id, fileName, contentType, fileUrl]
       properties:
         id: { type: string, format: uuid }
         fileName: { type: string }
-        viewUrl: { type: string, description: "short-lived link to view the file" }
-    ReceiptInput:
-      type: object
-      required: [fileName, contentType, sizeBytes]
-      properties:
-        fileName: { type: string }
         contentType: { type: string, description: "an image type or application/pdf" }
-        sizeBytes: { type: integer, maximum: 10485760, description: "at most 10 MB" }
-    ReceiptUpload:
+        fileUrl: { type: string, description: "relative URI of the operation that returns the file for this caller" }
+    ReceiptUploadForm:
       type: object
-      required: [receiptId, uploadUrl]
+      required: [file]
       properties:
-        receiptId: { type: string, format: uuid }
-        uploadUrl: { type: string, description: "short-lived link the browser uploads the file to" }
+        file: { type: string, format: binary, description: "an image or PDF, at most 10 MB" }
     Rejection:
       type: object
       required: [reason]
@@ -441,8 +434,8 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
   /me/claims/{claimId}/lines/{lineId}/receipts:
     post:
-      operationId: startMyReceiptUpload
-      summary: "Register a receipt on the caller's line and get a link to upload the file to"
+      operationId: uploadMyReceipt
+      summary: "Attach a receipt file to the caller's line until the claim is decided"
       security:
         - oauth2: [claims:submit]
       parameters:
@@ -451,14 +444,14 @@ paths:
       requestBody:
         required: true
         content:
-          application/json:
-            schema: { $ref: '#/components/schemas/ReceiptInput' }
+          multipart/form-data:
+            schema: { $ref: '#/components/schemas/ReceiptUploadForm' }
       responses:
         '201':
-          description: "The receipt and its upload link."
+          description: "The stored receipt."
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/ReceiptUpload' }
+              schema: { $ref: '#/components/schemas/Receipt' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -479,6 +472,27 @@ paths:
         '204':
           description: "The receipt is removed."
         '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /me/claims/{claimId}/lines/{lineId}/receipts/{receiptId}/file:
+    get:
+      operationId: downloadMyReceipt
+      summary: "The file of a receipt on the caller's own claim"
+      security:
+        - oauth2: [claims:read]
+      parameters:
+        - $ref: '#/components/parameters/claimId'
+        - $ref: '#/components/parameters/lineId'
+        - name: receiptId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: "The receipt file."
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
   /me/claims/{claimId}/submit:
@@ -554,6 +568,27 @@ paths:
               schema: { $ref: '#/components/schemas/ClaimDetail' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
+  /me/team/claims/{claimId}/lines/{lineId}/receipts/{receiptId}/file:
+    get:
+      operationId: downloadTeamReceipt
+      summary: "The file of a receipt on a direct report's claim"
+      security:
+        - oauth2: [claims:review-team]
+      parameters:
+        - $ref: '#/components/parameters/claimId'
+        - $ref: '#/components/parameters/lineId'
+        - name: receiptId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: "The receipt file."
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
   /me/team/claims/{claimId}/approve:
     post:
       operationId: approveTeamClaim
@@ -626,6 +661,27 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ClaimDetail' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /claims/{claimId}/lines/{lineId}/receipts/{receiptId}/file:
+    get:
+      operationId: downloadReceipt
+      summary: "The file of a receipt on any claim"
+      security:
+        - oauth2: [claims:read-all]
+      parameters:
+        - $ref: '#/components/parameters/claimId'
+        - $ref: '#/components/parameters/lineId'
+        - name: receiptId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: "The receipt file."
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
   /people:

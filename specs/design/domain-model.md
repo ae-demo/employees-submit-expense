@@ -43,7 +43,8 @@ erDiagram
         uuid lineId FK
         string fileName
         string contentType "image or PDF"
-        string objectKey "key in receipt storage"
+        int sizeBytes "at most 10 MB"
+        bytes content "the file, kept in the database"
     }
     CATEGORY {
         uuid id PK

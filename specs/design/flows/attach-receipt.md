@@ -1,25 +1,24 @@
 # Attach a receipt
 
-An employee attaches a receipt to an expense line; the file goes straight to storage and never passes through the API.
+An employee attaches a receipt to an expense line; the API checks and stores the file in its database.
 
 ```mermaid
 sequenceDiagram
     actor Employee
     participant expense-webapp
     participant expense-api
-    participant aws-s3
+    participant expense-db
 
     Employee->>expense-webapp: choose file for an expense line
-    expense-webapp->>expense-api: start receipt upload (name, type, size)
+    expense-webapp->>expense-api: upload receipt
     alt not an image or PDF, over 10 MB, or claim decided
         expense-api-->>expense-webapp: refused
     else
-        expense-api->>aws-s3: presign upload link
-        expense-api-->>expense-webapp: receipt id and upload link
-        expense-webapp->>aws-s3: upload file
+        expense-api->>expense-db: store file with the line
+        expense-api-->>expense-webapp: receipt
     end
-    Employee->>expense-webapp: open the claim
-    expense-webapp->>expense-api: get my claim
-    expense-api->>aws-s3: presign view links
-    expense-api-->>expense-webapp: lines with receipt links
+    Employee->>expense-webapp: open the receipt
+    expense-webapp->>expense-api: download receipt
+    expense-api->>expense-db: read file
+    expense-api-->>expense-webapp: file
 ```
