@@ -25,3 +25,4 @@ Needs: F2.
 
 - Pushing the export to a payroll system.
 - Per-line (category-level) rows in the export.
+

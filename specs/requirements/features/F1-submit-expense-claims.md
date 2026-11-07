@@ -27,3 +27,4 @@ Employees create, submit and track expense claims.
 ## Out of Scope
 
 - Receipts on expense lines (F4) and policy checks on submit (F5) are their own features.
+
