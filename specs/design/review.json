@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "artifacts": [
+    {
+      "path": "specs/design/security.json",
+      "checkedHash": "fb2396a3899473ad67cf53ff2a21ef31b237c8e99a59132871a01ef4d5a55d59"
+    },
+    {
+      "path": "specs/design/design.cell",
+      "checkedHash": "347aac3659342e6e7f92a4f10cf6a3d4dee9c7b29736807237797af290adc156"
+    },
+    {
+      "path": "specs/design/domain-model.md",
+      "checkedHash": "3e6799b3a7ee7d7ce115394205f67e6d048bf2662f0ae5b413c080e057d0aede"
+    },
+    {
+      "path": "specs/design/components/expense-webapp/prototype.json",
+      "checkedHash": "9292b3418badafa1eb39f9dff293aa66fdc500458ec921bbd137ba3d4547cb86"
+    }
+  ]
+}
