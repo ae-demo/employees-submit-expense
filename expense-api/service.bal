@@ -223,9 +223,21 @@ service http:InterceptableService / on ep0 {
         return page;
     }
 
-    // Not built yet: a later feature item implements this operation.
-    resource function post categories(@http:Payload CategoryInput payload) returns Category|ErrorBadRequest|ErrorUnauthorized {
-        return notImplemented();
+    # Create a category with an optional maximum per expense line
+    resource function post categories(http:RequestContext ctx, @http:Payload CategoryInput payload) returns CategoryCreated|ErrorBadRequest|ErrorUnauthorized|http:InternalServerError {
+        GatewayCaller|http:Unauthorized caller = requireGatewayCaller(ctx);
+        if caller !is GatewayCaller {
+            return unauthorized();
+        }
+        Category|error category = createCategory(payload);
+        if category is error {
+            if category is RuleError {
+                return badRequest(category);
+            }
+            return serverFailure(category, "creating a category");
+        }
+        CategoryCreated created = {body: category};
+        return created;
     }
 
     # Export the chosen approved claims and mark them Exported
@@ -318,6 +330,11 @@ service http:InterceptableService / on ep0 {
             return unauthorized();
         }
         ClaimDetail|error detail = submitClaim(caller.userId, claimId);
+        if detail is LimitError {
+            ClaimRefusalUnprocessableEntity refused = {body: {code: 422, message: "Claim not submitted", description: detail.message(),
+                violations: detail.detail().violations}};
+            return refused;
+        }
         if detail is RefusedError {
             ClaimRefusalUnprocessableEntity refused = {body: {code: 422, message: "Claim not submitted", description: detail.message()}};
             return refused;
@@ -392,9 +409,23 @@ service http:InterceptableService / on ep0 {
         return ok;
     }
 
-    // Not built yet: a later feature item implements this operation.
-    resource function put categories/[string categoryId](@http:Payload CategoryInput payload) returns Category|ErrorBadRequest|ErrorUnauthorized|ErrorNotFound {
-        return notFound();
+    # Rename a category or set, change or remove its maximum
+    resource function put categories/[string categoryId](http:RequestContext ctx, @http:Payload CategoryInput payload) returns Category|ErrorBadRequest|ErrorUnauthorized|ErrorNotFound|http:InternalServerError {
+        GatewayCaller|http:Unauthorized caller = requireGatewayCaller(ctx);
+        if caller !is GatewayCaller {
+            return unauthorized();
+        }
+        Category|error category = updateCategory(categoryId, payload);
+        if category is error {
+            if category is NotFoundError {
+                return notFound();
+            }
+            if category is RuleError {
+                return badRequest(category);
+            }
+            return serverFailure(category, "updating a category");
+        }
+        return category;
     }
 
     # Change the description of the caller's claim until it is decided

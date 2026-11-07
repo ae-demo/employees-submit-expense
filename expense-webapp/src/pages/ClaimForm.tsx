@@ -105,6 +105,10 @@ function LineForm({
     if (!categoryId && categories.length > 0) setCategoryId(categories[0].id);
   }, [categories, categoryId]);
 
+  const selected = categories.find((c) => c.id === categoryId);
+  const selectedMax = selected?.maximumCents;
+  const selectedName = selected?.name ?? "";
+
   const save = async (e: FormEvent): Promise<void> => {
     e.preventDefault();
     const cents = Math.round(Number(amount) * 100);
@@ -160,7 +164,7 @@ function LineForm({
           <TextField select label="Category" required value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
             {categories.map((c) => (
               <MenuItem key={c.id} value={c.id}>
-                {c.name}
+                {c.maximumCents == null ? c.name : `${c.name} (maximum ${money(c.maximumCents)})`}
               </MenuItem>
             ))}
           </TextField>
@@ -168,6 +172,7 @@ function LineForm({
             label="Amount"
             type="number"
             required
+            helperText={selectedMax == null ? undefined : `Maximum for ${selectedName}: ${money(selectedMax)} per line.`}
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             slotProps={{ htmlInput: { min: 0, step: "0.01" } }}

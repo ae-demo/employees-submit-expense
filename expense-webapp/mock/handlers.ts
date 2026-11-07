@@ -141,6 +141,20 @@ const err = (status: number, message: string, description?: string, extra?: obje
 const notFound = () => err(404, "Not found", "The claim does not exist or is not yours.");
 const decided = () => err(400, "Claim is decided", "Approved and exported claims can no longer be changed.");
 
+interface CategoryBody { name?: string; maximumCents?: number | null }
+let nextCategory = 10;
+/** The clean input, or the reason it is refused. The maximum is whole cents above zero, or null for no limit. */
+function categoryInputError(body: CategoryBody, selfId: string | null): { name: string; maximumCents: number | null } | string {
+  const name = body.name?.trim() ?? "";
+  if (name === "") return "Enter a name for the category.";
+  if (categories.some((c) => c.id !== selfId && c.name.toLowerCase() === name.toLowerCase())) {
+    return "A category with this name already exists.";
+  }
+  const max = body.maximumCents ?? null;
+  if (max !== null && (!Number.isInteger(max) || max < 1)) return "The maximum must be an amount above zero.";
+  return { name, maximumCents: max };
+}
+
 const mine = (): StoredClaim[] => claims.filter((c) => c.employeeName === me.name);
 const find = (id: unknown): StoredClaim | undefined => mine().find((c) => c.id === id);
 const editable = (c: StoredClaim): boolean => c.status === "Draft" || c.status === "Submitted" || c.status === "Rejected";
@@ -177,6 +191,29 @@ export const handlers = [
   http.get("/api/categories", () =>
     HttpResponse.json({ count: categories.length, next: null, previous: null, data: categories }),
   ),
+
+  http.post("/api/categories", async ({ request }) => {
+    const bad = categoryInputError((await request.json()) as CategoryBody, null);
+    if (typeof bad !== "string") {
+      const created: Category = { id: uid("c000", nextCategory), ...bad };
+      nextCategory += 1;
+      categories.push(created);
+      return HttpResponse.json(created, { status: 201 });
+    }
+    return err(400, "Invalid category", bad);
+  }),
+
+  http.put("/api/categories/:categoryId", async ({ params, request }) => {
+    const c = categories.find((x) => x.id === params.categoryId);
+    if (!c) return err(404, "Not found", "The category does not exist.");
+    const input = categoryInputError((await request.json()) as CategoryBody, c.id);
+    if (typeof input === "string") return err(400, "Invalid category", input);
+    // Lines carry the category by name, so a rename follows them.
+    for (const claim of claims) for (const l of claim.lines) if (l.category === c.name) l.category = input.name;
+    c.name = input.name;
+    c.maximumCents = input.maximumCents;
+    return HttpResponse.json(c);
+  }),
 
   http.get("/api/me/claims", ({ request }) => {
     const status = new URL(request.url).searchParams.get("status");

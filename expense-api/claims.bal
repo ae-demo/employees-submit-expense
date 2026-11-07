@@ -16,6 +16,9 @@ type RuleError distinct error;
 // A submit that is refused (422).
 type RefusedError distinct error;
 
+// A submit refused because lines are over their category maximum (422 with violations).
+type LimitError distinct error<record {|LimitViolation[] violations;|}>;
+
 public type ClaimDetailCreated record {|
     *http:Created;
     ClaimDetail body;
@@ -353,6 +356,7 @@ function submitClaim(string subject, string claimId) returns ClaimDetail|error {
     if manager is error {
         return manager;
     }
+    check checkLimits(claim.id);
     transaction {
         sql:ExecutionResult changed = check db->execute(`UPDATE claims SET status = 'Submitted',
             submitted_on = current_date, decided_on = NULL, rejection_reason = NULL
