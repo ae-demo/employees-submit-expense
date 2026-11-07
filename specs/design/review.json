@@ -16,6 +16,22 @@
     {
       "path": "specs/design/components/expense-webapp/prototype.json",
       "checkedHash": "9292b3418badafa1eb39f9dff293aa66fdc500458ec921bbd137ba3d4547cb86"
+    },
+    {
+      "path": "specs/design/components/expense-api/openapi.yaml",
+      "checkedHash": "3b5ad930862b7c9cb74dbe96d80da69443bea7e24910d985256ee3e0b4779880"
+    },
+    {
+      "path": "specs/design/flows/attach-receipt.md",
+      "checkedHash": "98ae65150ec118d2d75d1a6683552660b50e4a2ed2ee1b68adee2543f0db0e71"
+    },
+    {
+      "path": "specs/design/flows/claim-to-payroll.md",
+      "checkedHash": "195869476c9745b9d6c461c6670c0521689f74ca25cb598f00ca98e89c277596"
+    },
+    {
+      "path": "specs/design/decisions.md",
+      "checkedHash": "84259c48c986b8a9160c54ed34f49a7d5db38c409b9f2fcf63c592312743a315"
     }
   ]
 }
