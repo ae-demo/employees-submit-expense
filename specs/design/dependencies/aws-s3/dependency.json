@@ -1,0 +1,30 @@
+{
+  "name": "aws-s3",
+  "resource": {
+    "ref": "aws-s3",
+    "name": "aws-s3",
+    "description": "Amazon S3 object storage used for files uploaded within a project — images, PDFs, documents and other attachments. Files are never proxied through application servers; browsers upload and download directly against S3 using short-lived presigned URLs.",
+    "provider": "Amazon Web Services (S3)",
+    "config": [
+      {
+        "key": "AWS_ACCESS_KEY_ID",
+        "secret": true,
+        "description": "Access key ID for an IAM principal with PutObject/GetObject (and optionally DeleteObject) permission on the bucket."
+      },
+      {
+        "key": "AWS_REGION",
+        "description": "AWS region the bucket lives in, e.g. us-east-1."
+      },
+      {
+        "key": "AWS_SECRET_ACCESS_KEY",
+        "secret": true,
+        "description": "Secret access key paired with AWS_ACCESS_KEY_ID."
+      },
+      {
+        "key": "S3_BUCKET_NAME",
+        "description": "Name of the S3 bucket files are stored in."
+      }
+    ],
+    "consumptionInstructions": "A consuming service generates presigned URLs server-side with the AWS SDK — a PutObject presigned URL when a file needs to be uploaded, a GetObject presigned URL when a file needs to be viewed or downloaded — and returns only that URL to the browser, which performs the upload/download directly against S3. Never route file bytes through the application backend, and never hand the browser a long-lived credential: only the service holds the AWS access key and secret, and every presigned URL is scoped to one object key with a short expiry (a few minutes for uploads, longer for read-only viewing links as needed). Object keys should be namespaced per project/tenant to avoid collisions, and the bucket should have public access blocked — the presigned URL is what authorizes each individual request."
+  }
+}

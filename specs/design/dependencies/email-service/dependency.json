@@ -1,0 +1,26 @@
+{
+  "name": "email-service",
+  "resource": {
+    "ref": "email-service",
+    "name": "email-service",
+    "description": "Internal transactional email service used to send emails on behalf of consuming projects (e.g. notifications, confirmations, alerts).",
+    "provider": "Internal Email Service",
+    "config": [
+      {
+        "key": "EMAIL_SERVICE_BASE_URL",
+        "description": "Base URL of the internal email service, e.g. https://development-default.apps.94.72.97.95.sslip.io/internal-email-api"
+      }
+    ],
+    "contract": {
+      "type": "openapi",
+      "path": "openapi.yaml",
+      "origin": "registry"
+    },
+    "consumptionInstructions": "Whenever a project needs to send an email, call this service's API directly at its configured base URL. No authentication is required — the endpoint is reachable on the internal network with no API key or auth header."
+  },
+  "provenance": {
+    "registry": "email-service/openapi.yaml",
+    "sha256": "6060551c919d322919affbeacc3d0b9ff4fabf0c443010b885eb027f4e866f13",
+    "readOn": "2026-11-07T17:19:29Z"
+  }
+}

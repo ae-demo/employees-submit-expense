@@ -1,0 +1,173 @@
+openapi: 3.0.1
+info:
+  title: Email Service
+  description: Mock email delivery API. Accepts messages and reports a delivery status.
+    Nothing is actually sent.
+  version: 0.2.0
+servers:
+- url: "{server}:{port}/v1"
+  variables:
+    server:
+      default: http://localhost
+    port:
+      default: "8080"
+paths:
+  /emails:
+    get:
+      summary: List accepted messages.
+      operationId: getEmails
+      responses:
+        "200":
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailPage"
+    post:
+      summary: Accept an email for delivery.
+      operationId: postEmails
+      requestBody:
+        description: Message to send
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendEmailRequest"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailMessage"
+        "400":
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorPayload"
+  /emails/{messageId}:
+    get:
+      summary: Look up a single message.
+      operationId: getEmailsMessageid
+      parameters:
+      - name: messageId
+        in: path
+        description: Identifier returned when the message was accepted
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmailMessage"
+        "404":
+          description: NotFound
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "400":
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorPayload"
+components:
+  schemas:
+    ApiError:
+      required:
+      - code
+      - message
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+      additionalProperties: false
+      description: Error payload returned for any non-2xx response.
+    EmailMessage:
+      required:
+      - acceptedAt
+      - messageId
+      - status
+      - subject
+      - to
+      type: object
+      properties:
+        messageId:
+          type: string
+        to:
+          type: string
+        subject:
+          type: string
+        status:
+          $ref: "#/components/schemas/EmailStatus"
+        acceptedAt:
+          type: string
+      additionalProperties: false
+      description: A message accepted by the service.
+    EmailPage:
+      required:
+      - items
+      - total
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmailMessage"
+        total:
+          type: integer
+          format: int64
+      additionalProperties: false
+      description: A page of accepted messages.
+    EmailStatus:
+      type: string
+      description: Delivery state of a message.
+      enum:
+      - bounced
+      - delivered
+      - queued
+    ErrorPayload:
+      required:
+      - message
+      - method
+      - path
+      - reason
+      - status
+      - timestamp
+      type: object
+      properties:
+        timestamp:
+          type: string
+        status:
+          type: integer
+          format: int64
+        reason:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+        method:
+          type: string
+    SendEmailRequest:
+      required:
+      - body
+      - subject
+      - to
+      type: object
+      properties:
+        to:
+          type: string
+        subject:
+          type: string
+        body:
+          type: string
+      additionalProperties: false
+      description: Request to send an email.

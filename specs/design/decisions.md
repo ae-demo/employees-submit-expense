@@ -1,0 +1,17 @@
+# Technical decisions
+
+- \[architecture\] One backend service and one web app serve all five features; the database is a dedicated Postgres owned by the service. *assumed* (all)
+- \[architecture\] Receipt files go straight from the browser to storage through short-lived presigned URLs; the API stores only the file name, type and object key. *assumed* (F4)
+- \[architecture\] Notification emails are sent by the API through the registered email service, after the claim change is saved; a failed send never undoes the change. *assumed* (F2)
+- \[data-model\] Amounts are stored in whole cents; a claim's total is computed from its lines. *assumed* (all)
+- \[data-model\] An employee record is created the first time a person signs in, from the identity token, and has no manager until Finance assigns one. *assumed* (F1, F2)
+- \[data-model\] Exports keep the claim ids they include; the CSV is regenerated on download. *assumed* (F3)
+- \[security\] A manager reads the team's claims through /me/team/claims, which returns claims whose employee reports to the caller. *assumed* (F2)
+- \[security\] Finance reads every claim through /claims; a role that needs both views holds both handles. *assumed* (F3, F4)
+- \[security\] Categories and their maximums are readable by any signed-in person, since every employee sees them while adding a line. *assumed* (F5)
+- \[expense-api\] Receipt files are limited to 10 MB, images and PDF only. *assumed* (F4)
+- \[expense-api\] Lists return 20 items per page, up to 100. *assumed* (all)
+- \[expense-api\] The submit limit check and the manager check run on the server; the web app only shows the result. *assumed* (F1, F5)
+- \[expense-api\] The payroll CSV has the columns employee, claim number, total, approval date, with the total in dollars and cents. *assumed* (F3)
+- \[expense-webapp\] The prototype shows a receipt as a file name, because the prototype kit has no file picker; the built app uploads a real file. *assumed* (F4)
+- \[flows\] Two journeys are documented: a claim from submission to payroll, and attaching a receipt. *assumed* (F1, F2, F3, F4)

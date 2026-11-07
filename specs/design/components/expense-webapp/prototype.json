@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 3,
+  "name": "Expense claims",
+  "entryScreen": "screen.my-claims",
+  "roles": [
+    { "id": "Employee", "name": "Employee" },
+    { "id": "Manager", "name": "Manager" },
+    { "id": "FinanceOfficer", "name": "Finance" }
+  ],
+  "states": [
+    { "id": "state.default", "name": "Default" },
+    { "id": "state.empty", "name": "Nothing to show" },
+    { "id": "state.validation-error", "name": "Submit refused or fields invalid" }
+  ],
+  "screens": [
+    { "id": "screen.my-claims", "name": "My claims", "roleIds": ["Employee"] },
+    { "id": "screen.claim-form", "name": "Edit claim", "roleIds": ["Employee"] },
+    { "id": "screen.claim-detail", "name": "Claim", "roleIds": ["Employee"] },
+    { "id": "screen.team-queue", "name": "Team approvals", "roleIds": ["Manager"] },
+    { "id": "screen.team-review", "name": "Review claim", "roleIds": ["Manager"] },
+    { "id": "screen.team-decided", "name": "Decided claims", "roleIds": ["Manager"] },
+    { "id": "screen.export", "name": "Payroll export", "roleIds": ["FinanceOfficer"] },
+    { "id": "screen.export-history", "name": "Export history", "roleIds": ["FinanceOfficer"] },
+    { "id": "screen.finance-claim", "name": "Approved claim", "roleIds": ["FinanceOfficer"] },
+    { "id": "screen.categories", "name": "Expense limits", "roleIds": ["FinanceOfficer"] },
+    { "id": "screen.people", "name": "People", "roleIds": ["FinanceOfficer"] },
+    { "id": "screen.account", "name": "Account", "roleIds": ["Employee", "Manager", "FinanceOfficer"] },
+    { "id": "screen.signed-out", "name": "Signed out", "roleIds": ["Employee", "Manager", "FinanceOfficer"] }
+  ],
+  "flows": [
+    { "id": "flow.submit-claim", "name": "Submit a claim", "roleId": "Employee",
+      "screenIds": ["screen.my-claims", "screen.claim-form", "screen.claim-detail"] },
+    { "id": "flow.fix-rejected", "name": "Correct and resubmit a rejected claim", "roleId": "Employee",
+      "screenIds": ["screen.my-claims", "screen.claim-detail", "screen.claim-form"] },
+    { "id": "flow.review-claim", "name": "Approve or reject a claim", "roleId": "Manager",
+      "screenIds": ["screen.team-queue", "screen.team-review", "screen.team-decided"] },
+    { "id": "flow.export-payroll", "name": "Export approved claims", "roleId": "FinanceOfficer",
+      "screenIds": ["screen.export", "screen.finance-claim", "screen.export-history"] },
+    { "id": "flow.set-limits", "name": "Set expense limits", "roleId": "FinanceOfficer",
+      "screenIds": ["screen.categories"] },
+    { "id": "flow.assign-manager", "name": "Assign a manager", "roleId": "FinanceOfficer",
+      "screenIds": ["screen.people"] }
+  ]
+}
