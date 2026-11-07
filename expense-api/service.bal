@@ -20,10 +20,23 @@ service http:InterceptableService / on ep0 {
         }
         return me;
     }
-
-    // Not built yet: a later feature item implements this operation.
-    resource function delete me/claims/[string claimId]/lines/[string lineId]() returns http:NoContent|ErrorBadRequest|ErrorUnauthorized|ErrorNotFound {
-        return notFound();
+    # Remove an expense line from the caller's claim until it is decided
+    resource function delete me/claims/[string claimId]/lines/[string lineId](http:RequestContext ctx) returns http:NoContent|ErrorBadRequest|ErrorUnauthorized|ErrorNotFound|http:InternalServerError {
+        GatewayCaller|http:Unauthorized caller = requireGatewayCaller(ctx);
+        if caller !is GatewayCaller {
+            return unauthorized();
+        }
+        error? removed = removeLine(caller.userId, claimId, lineId);
+        if removed is error {
+            if removed is NotFoundError {
+                return notFound();
+            }
+            if removed is RuleError {
+                return badRequest(removed);
+            }
+            return serverFailure(removed, "removing a line");
+        }
+        return http:NO_CONTENT;
     }
 
     // Not built yet: a later feature item implements this operation.
@@ -31,44 +44,66 @@ service http:InterceptableService / on ep0 {
         return notFound();
     }
 
-    // Not built yet: a later feature item implements this operation.
-    resource function get categories(int 'limit = 20, int offset = 0) returns CategoryPage|ErrorUnauthorized {
-        return {count: 0, data: []};
+    # Every category with its maximum, for any signed-in person
+    resource function get categories(http:RequestContext ctx, int 'limit = 20, int offset = 0) returns CategoryPage|ErrorUnauthorized|http:InternalServerError {
+        GatewayCaller|http:Unauthorized caller = requireGatewayCaller(ctx);
+        if caller !is GatewayCaller {
+            return unauthorized();
+        }
+        CategoryPage|error page = listCategories('limit, offset);
+        if page is error {
+            log:printError("listing categories failed", 'error = page);
+            return internalError();
+        }
+        return page;
     }
-
     // Not built yet: a later feature item implements this operation.
     resource function get claims("Draft"|"Submitted"|"Approved"|"Rejected"|"Exported"? status, int 'limit = 20, int offset = 0) returns ClaimPage|ErrorUnauthorized {
         return {count: 0, data: []};
     }
-
     // Not built yet: a later feature item implements this operation.
     resource function get claims/[string claimId]() returns ClaimDetail|ErrorUnauthorized|ErrorNotFound {
         return notFound();
     }
-
     // Not built yet: a later feature item implements this operation.
     resource function get claims/[string claimId]/lines/[string lineId]/receipts/[string receiptId]/file() returns byte[]|ErrorUnauthorized|ErrorNotFound {
         return notFound();
     }
-
     // Not built yet: a later feature item implements this operation.
     resource function get exports(int 'limit = 20, int offset = 0) returns ExportPage|ErrorUnauthorized {
         return {count: 0, data: []};
     }
-
     // Not built yet: a later feature item implements this operation.
     resource function get exports/[string exportId]/file() returns string|ErrorUnauthorized|ErrorNotFound {
         return notFound();
     }
-
-    // Not built yet: a later feature item implements this operation.
-    resource function get me/claims("Draft"|"Submitted"|"Approved"|"Rejected"|"Exported"? status, int 'limit = 20, int offset = 0) returns ClaimPage|ErrorUnauthorized {
-        return {count: 0, data: []};
+    # The caller's claims, newest first
+    resource function get me/claims(http:RequestContext ctx, "Draft"|"Submitted"|"Approved"|"Rejected"|"Exported"? status, int 'limit = 20, int offset = 0) returns ClaimPage|ErrorUnauthorized|http:InternalServerError {
+        GatewayCaller|http:Unauthorized caller = requireGatewayCaller(ctx);
+        if caller !is GatewayCaller {
+            return unauthorized();
+        }
+        ClaimPage|error page = listClaims(caller.userId, status, 'limit, offset);
+        if page is error {
+            log:printError("listing claims failed", 'error = page);
+            return internalError();
+        }
+        return page;
     }
-
-    // Not built yet: a later feature item implements this operation.
-    resource function get me/claims/[string claimId]() returns ClaimDetail|ErrorUnauthorized|ErrorNotFound {
-        return notFound();
+    # One of the caller's claims with its lines
+    resource function get me/claims/[string claimId](http:RequestContext ctx) returns ClaimDetail|ErrorUnauthorized|ErrorNotFound|http:InternalServerError {
+        GatewayCaller|http:Unauthorized caller = requireGatewayCaller(ctx);
+        if caller !is GatewayCaller {
+            return unauthorized();
+        }
+        ClaimDetail|error detail = getClaim(caller.userId, claimId);
+        if detail is error {
+            if detail is NotFoundError {
+                return notFound();
+            }
+            return serverFailure(detail, "reading a claim");
+        }
+        return detail;
     }
 
     // Not built yet: a later feature item implements this operation.
@@ -106,14 +141,46 @@ service http:InterceptableService / on ep0 {
         return notImplemented();
     }
 
-    // Not built yet: a later feature item implements this operation.
-    resource function post me/claims(@http:Payload ClaimInput payload) returns ClaimDetail|ErrorBadRequest|ErrorUnauthorized {
-        return notImplemented();
+    # Create a draft claim for the caller
+    resource function post me/claims(http:RequestContext ctx, http:Request request, @http:Payload ClaimInput payload) returns ClaimDetailCreated|ErrorBadRequest|ErrorUnauthorized|http:InternalServerError {
+        GatewayCaller|http:Unauthorized caller = requireGatewayCaller(ctx);
+        if caller !is GatewayCaller {
+            return unauthorized();
+        }
+        Me|error me = ensurePerson(caller.userId, callerProfile(request, caller));
+        if me is error {
+            log:printError("resolving the caller's person record failed", 'error = me);
+            return internalError();
+        }
+        ClaimDetail|error detail = createClaim(me.id, payload);
+        if detail is error {
+            if detail is RuleError {
+                return badRequest(detail);
+            }
+            return serverFailure(detail, "creating a claim");
+        }
+        ClaimDetailCreated created = {body: detail, headers: {"Location": "/me/claims/" + detail.id}};
+        return created;
     }
 
-    // Not built yet: a later feature item implements this operation.
-    resource function post me/claims/[string claimId]/lines(@http:Payload ExpenseLineInput payload) returns ExpenseLine|ErrorBadRequest|ErrorUnauthorized|ErrorNotFound {
-        return notFound();
+    # Add an expense line to the caller's claim until it is decided
+    resource function post me/claims/[string claimId]/lines(http:RequestContext ctx, @http:Payload ExpenseLineInput payload) returns ExpenseLineCreated|ErrorBadRequest|ErrorUnauthorized|ErrorNotFound|http:InternalServerError {
+        GatewayCaller|http:Unauthorized caller = requireGatewayCaller(ctx);
+        if caller !is GatewayCaller {
+            return unauthorized();
+        }
+        ExpenseLine|error line = addLine(caller.userId, claimId, payload);
+        if line is error {
+            if line is NotFoundError {
+                return notFound();
+            }
+            if line is RuleError {
+                return badRequest(line);
+            }
+            return serverFailure(line, "adding a line");
+        }
+        ExpenseLineCreated created = {body: line};
+        return created;
     }
 
     // Not built yet: a later feature item implements this operation.
@@ -121,14 +188,45 @@ service http:InterceptableService / on ep0 {
         return notFound();
     }
 
-    // Not built yet: a later feature item implements this operation.
-    resource function post me/claims/[string claimId]/submit() returns ClaimDetailOk|ErrorUnauthorized|ErrorNotFound|ClaimRefusalUnprocessableEntity {
-        return notFound();
+    # Submit the caller's draft or rejected claim to their manager
+    resource function post me/claims/[string claimId]/submit(http:RequestContext ctx) returns ClaimDetailOk|ErrorUnauthorized|ErrorNotFound|ClaimRefusalUnprocessableEntity|http:InternalServerError {
+        GatewayCaller|http:Unauthorized caller = requireGatewayCaller(ctx);
+        if caller !is GatewayCaller {
+            return unauthorized();
+        }
+        ClaimDetail|error detail = submitClaim(caller.userId, claimId);
+        if detail is RefusedError {
+            ClaimRefusalUnprocessableEntity refused = {body: {code: 422, message: "Claim not submitted", description: detail.message()}};
+            return refused;
+        }
+        if detail is error {
+            if detail is NotFoundError {
+                return notFound();
+            }
+            return serverFailure(detail, "submitting a claim");
+        }
+        ClaimDetailOk ok = {body: detail};
+        return ok;
     }
 
-    // Not built yet: a later feature item implements this operation.
-    resource function post me/claims/[string claimId]/withdraw() returns ClaimDetailOk|ErrorBadRequest|ErrorUnauthorized|ErrorNotFound {
-        return notFound();
+    # Withdraw the caller's submitted claim back to Draft
+    resource function post me/claims/[string claimId]/withdraw(http:RequestContext ctx) returns ClaimDetailOk|ErrorBadRequest|ErrorUnauthorized|ErrorNotFound|http:InternalServerError {
+        GatewayCaller|http:Unauthorized caller = requireGatewayCaller(ctx);
+        if caller !is GatewayCaller {
+            return unauthorized();
+        }
+        ClaimDetail|error detail = withdrawClaim(caller.userId, claimId);
+        if detail is error {
+            if detail is NotFoundError {
+                return notFound();
+            }
+            if detail is RuleError {
+                return badRequest(detail);
+            }
+            return serverFailure(detail, "withdrawing a claim");
+        }
+        ClaimDetailOk ok = {body: detail};
+        return ok;
     }
 
     // Not built yet: a later feature item implements this operation.
@@ -146,14 +244,42 @@ service http:InterceptableService / on ep0 {
         return notFound();
     }
 
-    // Not built yet: a later feature item implements this operation.
-    resource function put me/claims/[string claimId](@http:Payload ClaimInput payload) returns ClaimDetail|ErrorBadRequest|ErrorUnauthorized|ErrorNotFound {
-        return notFound();
+    # Change the description of the caller's claim until it is decided
+    resource function put me/claims/[string claimId](http:RequestContext ctx, @http:Payload ClaimInput payload) returns ClaimDetail|ErrorBadRequest|ErrorUnauthorized|ErrorNotFound|http:InternalServerError {
+        GatewayCaller|http:Unauthorized caller = requireGatewayCaller(ctx);
+        if caller !is GatewayCaller {
+            return unauthorized();
+        }
+        ClaimDetail|error detail = updateClaim(caller.userId, claimId, payload);
+        if detail is error {
+            if detail is NotFoundError {
+                return notFound();
+            }
+            if detail is RuleError {
+                return badRequest(detail);
+            }
+            return serverFailure(detail, "updating a claim");
+        }
+        return detail;
     }
 
-    // Not built yet: a later feature item implements this operation.
-    resource function put me/claims/[string claimId]/lines/[string lineId](@http:Payload ExpenseLineInput payload) returns ExpenseLine|ErrorBadRequest|ErrorUnauthorized|ErrorNotFound {
-        return notFound();
+    # Change an expense line of the caller's claim until it is decided
+    resource function put me/claims/[string claimId]/lines/[string lineId](http:RequestContext ctx, @http:Payload ExpenseLineInput payload) returns ExpenseLine|ErrorBadRequest|ErrorUnauthorized|ErrorNotFound|http:InternalServerError {
+        GatewayCaller|http:Unauthorized caller = requireGatewayCaller(ctx);
+        if caller !is GatewayCaller {
+            return unauthorized();
+        }
+        ExpenseLine|error line = updateLine(caller.userId, claimId, lineId, payload);
+        if line is error {
+            if line is NotFoundError {
+                return notFound();
+            }
+            if line is RuleError {
+                return badRequest(line);
+            }
+            return serverFailure(line, "updating a line");
+        }
+        return line;
     }
 
     // Not built yet: a later feature item implements this operation.
