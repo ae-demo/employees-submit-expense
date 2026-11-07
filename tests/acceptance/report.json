@@ -1,0 +1,1059 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-07T18:52:51.022943Z",
+  "commit": "307557db1e06b9f1443750998115566c567db662",
+  "baseUrl": "https://http-employees-sub-development-default-9552c87f.apps.94.72.97.95.sslip.io",
+  "isolation": "none achieved: no scenario could create a container or read a count because the backend was unreachable (404 on every API path)",
+  "scenarios": [
+    {
+      "feature": "F1 Submit expense claims",
+      "featureFile": "specs/validation/acceptance/F1-submit-expense-claims.feature",
+      "line": 6,
+      "rule": "An employee builds a claim from expense lines and can keep it as a draft",
+      "scenario": "Saving a claim with two lines as a draft",
+      "tags": [],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Maya the employee has a manager assigned",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Maya creates a claim \"Client visit, Colombo\" with a \"Travel\" line of \"$42.00\" for \"Taxi to client office\" and a \"Meals\" line of \"$36.00\" for \"Client lunch\", and saves it as a draft",
+          "keyword": "When"
+        },
+        {
+          "text": "the claim \"Client visit, Colombo\" is in her list as Draft with a total of \"$78.00\"",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F1 Submit expense claims",
+      "featureFile": "specs/validation/acceptance/F1-submit-expense-claims.feature",
+      "line": 14,
+      "rule": "Only a claim with at least one line can be submitted, and only by an employee who has a manager",
+      "scenario": "Submitting a claim to the manager",
+      "tags": [],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Maya has a Draft claim \"Conference trip\" with a \"Travel\" line of \"$125.00\" and her manager is Ravi",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Maya submits the claim",
+          "keyword": "When"
+        },
+        {
+          "text": "the claim \"Conference trip\" shows as Submitted in her list",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F1 Submit expense claims",
+      "featureFile": "specs/validation/acceptance/F1-submit-expense-claims.feature",
+      "line": 20,
+      "rule": "Only a claim with at least one line can be submitted, and only by an employee who has a manager",
+      "scenario": "A claim with no lines is not submitted",
+      "tags": [
+        "@negative"
+      ],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Maya has a Draft claim \"Empty claim\" with no lines",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Maya tries to submit the claim",
+          "keyword": "When"
+        },
+        {
+          "text": "the claim \"Empty claim\" is still Draft",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F1 Submit expense claims",
+      "featureFile": "specs/validation/acceptance/F1-submit-expense-claims.feature",
+      "line": 26,
+      "rule": "Only a claim with at least one line can be submitted, and only by an employee who has a manager",
+      "scenario": "An employee without a manager cannot submit",
+      "tags": [
+        "@negative"
+      ],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Sam the employee has no manager assigned and a Draft claim \"Taxi\" with a \"Travel\" line of \"$20.00\"",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Sam tries to submit the claim",
+          "keyword": "When"
+        },
+        {
+          "text": "the claim \"Taxi\" is still Draft",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F1 Submit expense claims",
+      "featureFile": "specs/validation/acceptance/F1-submit-expense-claims.feature",
+      "line": 34,
+      "rule": "Until the manager decides, the employee may edit or withdraw a submitted claim",
+      "scenario": "Editing a submitted claim",
+      "tags": [],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Maya has a Submitted claim \"Conference trip\"",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Maya changes its description to \"Conference trip, Singapore\"",
+          "keyword": "When"
+        },
+        {
+          "text": "the claim is listed as \"Conference trip, Singapore\" and is still Submitted",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F1 Submit expense claims",
+      "featureFile": "specs/validation/acceptance/F1-submit-expense-claims.feature",
+      "line": 39,
+      "rule": "Until the manager decides, the employee may edit or withdraw a submitted claim",
+      "scenario": "Withdrawing a submitted claim",
+      "tags": [],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Maya has a Submitted claim \"Conference trip\"",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Maya withdraws it",
+          "keyword": "When"
+        },
+        {
+          "text": "the claim \"Conference trip\" is Draft",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F1 Submit expense claims",
+      "featureFile": "specs/validation/acceptance/F1-submit-expense-claims.feature",
+      "line": 45,
+      "rule": "Until the manager decides, the employee may edit or withdraw a submitted claim",
+      "scenario": "An approved claim cannot be edited",
+      "tags": [
+        "@negative"
+      ],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Maya has an Approved claim \"Taxi in December\" with a \"Travel\" line of \"$27.50\"",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Maya tries to add a \"Meals\" line of \"$10.00\" to it",
+          "keyword": "When"
+        },
+        {
+          "text": "the claim \"Taxi in December\" still has exactly one line",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F1 Submit expense claims",
+      "featureFile": "specs/validation/acceptance/F1-submit-expense-claims.feature",
+      "line": 53,
+      "rule": "The employee sees all their claims with each claim's status",
+      "scenario": "The list shows every status",
+      "tags": [],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Maya has one claim each in Draft, Submitted, Approved, Rejected and Exported",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Maya opens her claims",
+          "keyword": "When"
+        },
+        {
+          "text": "she sees five claims, each with its own status",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F1 Submit expense claims",
+      "featureFile": "specs/validation/acceptance/F1-submit-expense-claims.feature",
+      "line": 61,
+      "rule": "A rejected claim shows why and can be corrected and resubmitted",
+      "scenario": "Resubmitting after a rejection",
+      "tags": [],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Ravi rejected Maya's claim \"Team lunch\" with the reason \"The lunch was above the team lunch budget\"",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Maya opens the claim",
+          "keyword": "When"
+        },
+        {
+          "text": "she sees the reason \"The lunch was above the team lunch budget\"",
+          "keyword": "Then"
+        },
+        {
+          "text": "Maya changes the \"Meals\" line to \"$45.00\" and resubmits",
+          "keyword": "When"
+        },
+        {
+          "text": "the claim \"Team lunch\" is Submitted",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F2 Approvals",
+      "featureFile": "specs/validation/acceptance/F2-approvals.feature",
+      "line": 6,
+      "rule": "A manager sees the submitted claims of their own team, oldest first",
+      "scenario": "The queue shows direct reports' claims only",
+      "tags": [],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Ravi manages Maya and Dan, and Priya manages Ravi",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Dan submitted \"Training books\" on \"2026-01-09\" and Maya submitted \"Conference trip\" on \"2026-01-12\"",
+          "keyword": "Given"
+        },
+        {
+          "text": "Priya's other report Ana submitted \"Software licence\"",
+          "keyword": "Given"
+        },
+        {
+          "text": "Ravi opens his team approvals",
+          "keyword": "When"
+        },
+        {
+          "text": "he sees \"Training books\" first and \"Conference trip\" second",
+          "keyword": "Then"
+        },
+        {
+          "text": "he does not see \"Software licence\"",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F2 Approvals",
+      "featureFile": "specs/validation/acceptance/F2-approvals.feature",
+      "line": 14,
+      "rule": "A manager sees the submitted claims of their own team, oldest first",
+      "scenario": "The manager is emailed when a claim is submitted",
+      "tags": [],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Ravi manages Maya",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Maya submits her claim \"Conference trip\"",
+          "keyword": "When"
+        },
+        {
+          "text": "Ravi receives an email about \"Conference trip\"",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F2 Approvals",
+      "featureFile": "specs/validation/acceptance/F2-approvals.feature",
+      "line": 19,
+      "rule": "A manager sees the submitted claims of their own team, oldest first",
+      "scenario": "A manager sees the lines of a claim",
+      "tags": [],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Maya's submitted claim \"Conference trip\" has a \"Travel\" line of \"$125.00\" and an \"Accommodation\" line of \"$180.00\"",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Ravi opens the claim",
+          "keyword": "When"
+        },
+        {
+          "text": "he sees both lines and a total of \"$305.00\"",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F2 Approvals",
+      "featureFile": "specs/validation/acceptance/F2-approvals.feature",
+      "line": 27,
+      "rule": "A manager approves a claim as a whole and the employee is told",
+      "scenario": "Approving a claim",
+      "tags": [],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Maya's claim \"Conference trip\" is Submitted to Ravi",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Ravi approves it",
+          "keyword": "When"
+        },
+        {
+          "text": "the claim is Approved and listed in Ravi's decided claims",
+          "keyword": "Then"
+        },
+        {
+          "text": "Maya receives an email that \"Conference trip\" was approved",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F2 Approvals",
+      "featureFile": "specs/validation/acceptance/F2-approvals.feature",
+      "line": 36,
+      "rule": "A rejection needs a reason",
+      "scenario": "Rejecting with a reason",
+      "tags": [],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Maya's claim \"Team lunch\" is Submitted to Ravi",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Ravi rejects it with the reason \"Above the team lunch budget\"",
+          "keyword": "When"
+        },
+        {
+          "text": "the claim is Rejected and Maya sees the reason \"Above the team lunch budget\"",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F2 Approvals",
+      "featureFile": "specs/validation/acceptance/F2-approvals.feature",
+      "line": 42,
+      "rule": "A rejection needs a reason",
+      "scenario": "A rejection without a reason is refused",
+      "tags": [
+        "@negative"
+      ],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Maya's claim \"Team lunch\" is Submitted to Ravi",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Ravi tries to reject it with an empty reason",
+          "keyword": "When"
+        },
+        {
+          "text": "the claim \"Team lunch\" is still Submitted",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F2 Approvals",
+      "featureFile": "specs/validation/acceptance/F2-approvals.feature",
+      "line": 50,
+      "rule": "Only a direct manager decides a claim, and never their own",
+      "scenario": "A manager of another team cannot decide the claim",
+      "tags": [
+        "@negative"
+      ],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Maya's claim \"Conference trip\" is Submitted to Ravi",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Priya tries to approve it",
+          "keyword": "When"
+        },
+        {
+          "text": "the claim \"Conference trip\" is still Submitted",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F2 Approvals",
+      "featureFile": "specs/validation/acceptance/F2-approvals.feature",
+      "line": 56,
+      "rule": "Only a direct manager decides a claim, and never their own",
+      "scenario": "A decided claim cannot be changed by the manager",
+      "tags": [
+        "@negative"
+      ],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Ravi approved Maya's claim \"Conference trip\"",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Ravi tries to reject it with the reason \"Changed my mind\"",
+          "keyword": "When"
+        },
+        {
+          "text": "the claim \"Conference trip\" is still Approved",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F2 Approvals",
+      "featureFile": "specs/validation/acceptance/F2-approvals.feature",
+      "line": 63,
+      "rule": "Finance assigns each employee's manager",
+      "scenario": "Assigning a manager",
+      "tags": [],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Sam the employee has no manager and Ana is from Finance",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Ana assigns Ravi as Sam's manager",
+          "keyword": "When"
+        },
+        {
+          "text": "Sam's claims are submitted to Ravi",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F2 Approvals",
+      "featureFile": "specs/validation/acceptance/F2-approvals.feature",
+      "line": 69,
+      "rule": "Finance assigns each employee's manager",
+      "scenario": "An employee cannot assign managers",
+      "tags": [
+        "@negative"
+      ],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Maya is signed in as an employee",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Maya tries to open the People list",
+          "keyword": "When"
+        },
+        {
+          "text": "she sees no employees and no way to change a manager",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F3 Payroll export",
+      "featureFile": "specs/validation/acceptance/F3-payroll-export.feature",
+      "line": 6,
+      "rule": "Finance sees only approved claims that are not yet exported",
+      "scenario": "The export list",
+      "tags": [],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "there is one claim each Submitted, Approved, Rejected and Exported",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Ana from Finance opens the payroll export",
+          "keyword": "When"
+        },
+        {
+          "text": "she sees only the Approved claim",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F3 Payroll export",
+      "featureFile": "specs/validation/acceptance/F3-payroll-export.feature",
+      "line": 14,
+      "rule": "Exporting marks the chosen claims Exported and leaves them out of later exports",
+      "scenario": "Exporting one claim of two",
+      "tags": [],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Maya's claim \"Taxi in December\" for \"$27.50\" and Dan's claim \"Hotel in Kandy\" for \"$195.00\" are Approved",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Ana selects \"Taxi in December\" and exports it",
+          "keyword": "When"
+        },
+        {
+          "text": "the claim \"Taxi in December\" is Exported and Maya sees it as Exported",
+          "keyword": "Then"
+        },
+        {
+          "text": "the export list still shows \"Hotel in Kandy\" as Approved and not \"Taxi in December\"",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F3 Payroll export",
+      "featureFile": "specs/validation/acceptance/F3-payroll-export.feature",
+      "line": 21,
+      "rule": "Exporting marks the chosen claims Exported and leaves them out of later exports",
+      "scenario": "An export needs at least one claim",
+      "tags": [
+        "@negative"
+      ],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Dan's claim \"Hotel in Kandy\" is Approved",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Ana tries to export with nothing selected",
+          "keyword": "When"
+        },
+        {
+          "text": "no export is created and \"Hotel in Kandy\" is still Approved",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F3 Payroll export",
+      "featureFile": "specs/validation/acceptance/F3-payroll-export.feature",
+      "line": 27,
+      "rule": "Exporting marks the chosen claims Exported and leaves them out of later exports",
+      "scenario": "A claim that is not approved cannot be exported",
+      "tags": [
+        "@negative"
+      ],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Maya's claim \"Conference trip\" is Submitted",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Ana tries to export \"Conference trip\"",
+          "keyword": "When"
+        },
+        {
+          "text": "\"Conference trip\" is still Submitted",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F3 Payroll export",
+      "featureFile": "specs/validation/acceptance/F3-payroll-export.feature",
+      "line": 35,
+      "rule": "Past exports can be downloaded again without changing anything",
+      "scenario": "Downloading an export twice",
+      "tags": [],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Ana exported \"Taxi in December\" for \"$27.50\"",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Ana downloads that export twice",
+          "keyword": "When"
+        },
+        {
+          "text": "both files have one row for \"Maya Fernando\", claim \"EXP-1030\", total \"$27.50\" and the approval date",
+          "keyword": "Then"
+        },
+        {
+          "text": "no claim changed status",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F3 Payroll export",
+      "featureFile": "specs/validation/acceptance/F3-payroll-export.feature",
+      "line": 42,
+      "rule": "Past exports can be downloaded again without changing anything",
+      "scenario": "Employees cannot reach exports",
+      "tags": [
+        "@negative"
+      ],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Maya is signed in as an employee",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Maya tries to open the export history",
+          "keyword": "When"
+        },
+        {
+          "text": "she sees no exports",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F4 Receipt attachments",
+      "featureFile": "specs/validation/acceptance/F4-receipt-attachments.feature",
+      "line": 6,
+      "rule": "An employee attaches receipts to expense lines, which are optional",
+      "scenario": "Attaching a receipt to a line",
+      "tags": [],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Maya has a Draft claim with a \"Travel\" line of \"$42.00\" and no receipt",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Maya attaches the PDF \"taxi-0110.pdf\" to that line",
+          "keyword": "When"
+        },
+        {
+          "text": "the line shows the receipt \"taxi-0110.pdf\" on her claim",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F4 Receipt attachments",
+      "featureFile": "specs/validation/acceptance/F4-receipt-attachments.feature",
+      "line": 11,
+      "rule": "An employee attaches receipts to expense lines, which are optional",
+      "scenario": "A claim without receipts can still be submitted",
+      "tags": [],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Maya has a Draft claim with a \"Meals\" line of \"$36.00\" and no receipt",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Maya submits the claim",
+          "keyword": "When"
+        },
+        {
+          "text": "the claim is Submitted",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F4 Receipt attachments",
+      "featureFile": "specs/validation/acceptance/F4-receipt-attachments.feature",
+      "line": 17,
+      "rule": "An employee attaches receipts to expense lines, which are optional",
+      "scenario": "Only images and PDFs are accepted",
+      "tags": [
+        "@negative"
+      ],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Maya has a Draft claim with a \"Travel\" line of \"$42.00\"",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Maya tries to attach a spreadsheet \"costs.xlsx\" to the line",
+          "keyword": "When"
+        },
+        {
+          "text": "the line has no receipt",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F4 Receipt attachments",
+      "featureFile": "specs/validation/acceptance/F4-receipt-attachments.feature",
+      "line": 25,
+      "rule": "Receipts can be removed only until the claim is decided",
+      "scenario": "Removing a receipt from a submitted claim",
+      "tags": [],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Maya's Submitted claim has a line with the receipt \"hotel.pdf\"",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Maya removes the receipt",
+          "keyword": "When"
+        },
+        {
+          "text": "the line has no receipt",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F4 Receipt attachments",
+      "featureFile": "specs/validation/acceptance/F4-receipt-attachments.feature",
+      "line": 31,
+      "rule": "Receipts can be removed only until the claim is decided",
+      "scenario": "A receipt on an approved claim is fixed",
+      "tags": [
+        "@negative"
+      ],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Maya's Approved claim has a line with the receipt \"taxi.jpg\"",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Maya tries to remove the receipt",
+          "keyword": "When"
+        },
+        {
+          "text": "the line still has the receipt \"taxi.jpg\"",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F4 Receipt attachments",
+      "featureFile": "specs/validation/acceptance/F4-receipt-attachments.feature",
+      "line": 39,
+      "rule": "Reviewers see receipts, each only on the claims they may read",
+      "scenario": "A manager sees a team member's receipts",
+      "tags": [],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Dan's Submitted claim has a line with the receipt \"books.pdf\" and Ravi manages Dan",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Ravi opens the claim",
+          "keyword": "When"
+        },
+        {
+          "text": "he can open the receipt \"books.pdf\"",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F4 Receipt attachments",
+      "featureFile": "specs/validation/acceptance/F4-receipt-attachments.feature",
+      "line": 44,
+      "rule": "Reviewers see receipts, each only on the claims they may read",
+      "scenario": "Finance sees receipts on an approved claim",
+      "tags": [],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Dan's Approved claim \"Hotel in Kandy\" has a line with the receipt \"kandy.pdf\"",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Ana from Finance opens the claim",
+          "keyword": "When"
+        },
+        {
+          "text": "she can open the receipt \"kandy.pdf\"",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F4 Receipt attachments",
+      "featureFile": "specs/validation/acceptance/F4-receipt-attachments.feature",
+      "line": 50,
+      "rule": "Reviewers see receipts, each only on the claims they may read",
+      "scenario": "A manager of another team cannot open the receipt",
+      "tags": [
+        "@negative"
+      ],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Dan's Submitted claim has a line with the receipt \"books.pdf\" and Priya does not manage Dan",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Priya tries to open Dan's claim",
+          "keyword": "When"
+        },
+        {
+          "text": "she sees no claim and no receipt",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F5 Expense policy limits",
+      "featureFile": "specs/validation/acceptance/F5-expense-policy-limits.feature",
+      "line": 6,
+      "rule": "Finance sets, changes and removes the maximum of each category",
+      "scenario": "Setting a maximum",
+      "tags": [],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "the category \"Meals\" has no maximum",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Ana from Finance sets the maximum of \"Meals\" to \"$50.00\"",
+          "keyword": "When"
+        },
+        {
+          "text": "the limits list shows \"Meals\" with \"$50.00\"",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F5 Expense policy limits",
+      "featureFile": "specs/validation/acceptance/F5-expense-policy-limits.feature",
+      "line": 11,
+      "rule": "Finance sets, changes and removes the maximum of each category",
+      "scenario": "Removing a maximum",
+      "tags": [],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "the category \"Travel\" has a maximum of \"$300.00\"",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Ana removes the maximum of \"Travel\"",
+          "keyword": "When"
+        },
+        {
+          "text": "the limits list shows \"Travel\" with no maximum",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F5 Expense policy limits",
+      "featureFile": "specs/validation/acceptance/F5-expense-policy-limits.feature",
+      "line": 17,
+      "rule": "Finance sets, changes and removes the maximum of each category",
+      "scenario": "Employees cannot change limits",
+      "tags": [
+        "@negative"
+      ],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Maya is signed in as an employee",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Maya tries to change the maximum of \"Meals\"",
+          "keyword": "When"
+        },
+        {
+          "text": "the maximum of \"Meals\" is unchanged",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F5 Expense policy limits",
+      "featureFile": "specs/validation/acceptance/F5-expense-policy-limits.feature",
+      "line": 26,
+      "rule": "A claim with a line over its category maximum cannot be submitted",
+      "scenario": "A line over the maximum blocks submission",
+      "tags": [
+        "@negative"
+      ],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "\"Travel\" has a maximum of \"$300.00\" and Maya has a Draft claim with a \"Travel\" line \"Taxi to client office\" of \"$450.00\"",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Maya tries to submit the claim",
+          "keyword": "When"
+        },
+        {
+          "text": "she is shown that \"Taxi to client office\" is over the \"$300.00\" maximum",
+          "keyword": "Then"
+        },
+        {
+          "text": "the claim is still Draft",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F5 Expense policy limits",
+      "featureFile": "specs/validation/acceptance/F5-expense-policy-limits.feature",
+      "line": 32,
+      "rule": "A claim with a line over its category maximum cannot be submitted",
+      "scenario": "A line equal to the maximum is allowed",
+      "tags": [],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "\"Meals\" has a maximum of \"$50.00\" and Maya has a Draft claim with a \"Meals\" line of \"$50.00\"",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Maya submits the claim",
+          "keyword": "When"
+        },
+        {
+          "text": "the claim is Submitted",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F5 Expense policy limits",
+      "featureFile": "specs/validation/acceptance/F5-expense-policy-limits.feature",
+      "line": 37,
+      "rule": "A claim with a line over its category maximum cannot be submitted",
+      "scenario": "A category without a maximum has no limit",
+      "tags": [],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "\"Office supplies\" has no maximum and Maya has a Draft claim with an \"Office supplies\" line of \"$900.00\"",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Maya submits the claim",
+          "keyword": "When"
+        },
+        {
+          "text": "the claim is Submitted",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F5 Expense policy limits",
+      "featureFile": "specs/validation/acceptance/F5-expense-policy-limits.feature",
+      "line": 42,
+      "rule": "A claim with a line over its category maximum cannot be submitted",
+      "scenario": "Changing a limit leaves submitted claims alone",
+      "tags": [],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "Maya's Submitted claim has a \"Meals\" line of \"$48.00\" and \"Meals\" has a maximum of \"$50.00\"",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Ana lowers the maximum of \"Meals\" to \"$40.00\"",
+          "keyword": "When"
+        },
+        {
+          "text": "Maya's claim is still Submitted",
+          "keyword": "Then"
+        }
+      ]
+    },
+    {
+      "feature": "F5 Expense policy limits",
+      "featureFile": "specs/validation/acceptance/F5-expense-policy-limits.feature",
+      "line": 50,
+      "rule": "An employee sees each category's maximum while adding a line",
+      "scenario": "Maximums are visible on the claim",
+      "tags": [],
+      "outcome": "blocked",
+      "steps": [
+        {
+          "text": "\"Meals\" has a maximum of \"$50.00\" and \"Travel\" has a maximum of \"$300.00\"",
+          "keyword": "Given",
+          "observed": "Could not be carried out: the deployed expense-api answers 404 {\"error\":\"Not Found\"} on /me, /me/claims, /categories with a valid test-employee bearer token, and the webapp's own GET /api/me/claims returns 404 (page shows 'Your claims could not be loaded'). No interface can reach the backend."
+        },
+        {
+          "text": "Maya opens a Draft claim to add a line",
+          "keyword": "When"
+        },
+        {
+          "text": "she sees \"Meals $50.00\" and \"Travel $300.00\" as the maximums per line",
+          "keyword": "Then"
+        }
+      ]
+    }
+  ]
+}
