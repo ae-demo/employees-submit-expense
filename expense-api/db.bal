@@ -35,6 +35,7 @@ function initSchema() returns error? {
         claim_count integer NOT NULL,
         total_cents bigint NOT NULL
     )`);
+    _ = check db->execute(`ALTER TABLE exports ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now()`);
     _ = check db->execute(`CREATE SEQUENCE IF NOT EXISTS claim_number_seq START 1001`);
     _ = check db->execute(`CREATE TABLE IF NOT EXISTS claims (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

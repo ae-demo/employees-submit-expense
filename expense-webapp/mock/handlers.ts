@@ -7,6 +7,7 @@ type ClaimSummary = components["schemas"]["ClaimSummary"];
 type ExpenseLine = components["schemas"]["ExpenseLine"];
 type LineInput = components["schemas"]["ExpenseLineInput"];
 type Person = components["schemas"]["Person"];
+type Export = components["schemas"]["Export"];
 
 // State lives in the page's own JS context: a full page load re-seeds it.
 // Feature items add the claim, category, people and export handlers here.
@@ -108,6 +109,20 @@ const today = (): string => new Date().toISOString().slice(0, 10);
 const findTeam = (id: unknown): StoredClaim | undefined => teamClaims().find((c) => c.id === id);
 const notTeam = () => err(404, "Not found", "The claim does not exist or is not from your team.");
 const alreadyDecided = () => err(400, "Claim is decided", "Only a submitted claim can be decided.");
+
+// Past exports (prototype x1: Ana exported Maya's EXP-1022). `claimIds` is the file's rows.
+interface StoredExport extends Export {
+  claimIds: string[];
+}
+const exportsData: StoredExport[] = [
+  {
+    id: uid("b000", 1), createdOn: "2025-12-31", createdByName: "Ana Silva", claimCount: 1, totalCents: 6400,
+    claimIds: [uid("a000", 5)],
+  },
+];
+let nextExport = 2;
+const exportOf = ({ claimIds: _ids, ...rest }: StoredExport): Export => rest;
+const csvCell = (v: string): string => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
 
 let nextClaim = 1050;
 let nextLine = 100;
@@ -296,5 +311,54 @@ export const handlers = [
     p.managerName = manager?.name ?? null;
     if (p.id === me.id) me.managerName = p.managerName;
     return HttpResponse.json(p);
+  }),
+
+  http.get("/api/claims", ({ request }) => {
+    const status = new URL(request.url).searchParams.get("status");
+    const data = claims.filter((c) => !status || c.status === status).map(summary);
+    return HttpResponse.json({ count: data.length, next: null, previous: null, data });
+  }),
+
+  http.get("/api/claims/:claimId", ({ params }) => {
+    const c = claims.find((x) => x.id === params.claimId);
+    return c ? HttpResponse.json(detail(c)) : err(404, "Not found", "The claim does not exist.");
+  }),
+
+  http.get("/api/exports", () => {
+    const data = exportsData.map(exportOf).reverse();
+    return HttpResponse.json({ count: data.length, next: null, previous: null, data });
+  }),
+
+  http.post("/api/exports", async ({ request }) => {
+    const body = (await request.json()) as { claimIds?: string[] };
+    const ids = body.claimIds ?? [];
+    if (ids.length === 0) return err(400, "Nothing selected", "Choose at least one approved claim to export.");
+    const chosen = ids.map((id) => claims.find((c) => c.id === id));
+    if (chosen.some((c) => !c || c.status !== "Approved")) {
+      return err(400, "Not exportable", "Only approved claims that are not yet exported can be exported.");
+    }
+    const picked = chosen as StoredClaim[];
+    const created: StoredExport = {
+      id: uid("b000", nextExport), createdOn: today(), createdByName: "Ana Silva", claimCount: picked.length,
+      totalCents: picked.reduce((s, c) => s + total(c), 0), claimIds: picked.map((c) => c.id),
+    };
+    nextExport += 1;
+    picked.forEach((c) => {
+      c.status = "Exported";
+    });
+    exportsData.push(created);
+    return HttpResponse.json(exportOf(created), { status: 201 });
+  }),
+
+  http.get("/api/exports/:exportId/file", ({ params }) => {
+    const x = exportsData.find((e) => e.id === params.exportId);
+    if (!x) return err(404, "Not found", "The export does not exist.");
+    const rows = x.claimIds.flatMap((id) => {
+      const c = claims.find((k) => k.id === id);
+      return c ? [[c.employeeName, c.number, (total(c) / 100).toFixed(2), c.decidedOn ?? ""].map(csvCell).join(",")] : [];
+    });
+    return new HttpResponse(["Employee,Claim,Total,Approved", ...rows].join("\n") + "\n", {
+      headers: { "Content-Type": "text/csv" },
+    });
   }),
 ];

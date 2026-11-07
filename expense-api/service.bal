@@ -57,25 +57,50 @@ service http:InterceptableService / on ep0 {
         }
         return page;
     }
-    // Not built yet: a later feature item implements this operation.
-    resource function get claims("Draft"|"Submitted"|"Approved"|"Rejected"|"Exported"? status, int 'limit = 20, int offset = 0) returns ClaimPage|ErrorUnauthorized {
-        return {count: 0, data: []};
+    # Every claim, filterable by status
+    resource function get claims("Draft"|"Submitted"|"Approved"|"Rejected"|"Exported"? status, int 'limit = 20, int offset = 0) returns ClaimPage|ErrorUnauthorized|http:InternalServerError {
+        ClaimPage|error page = listAllClaims(status, 'limit, offset);
+        if page is error {
+            return serverFailure(page, "listing every claim");
+        }
+        return page;
     }
-    // Not built yet: a later feature item implements this operation.
-    resource function get claims/[string claimId]() returns ClaimDetail|ErrorUnauthorized|ErrorNotFound {
-        return notFound();
+    # Any claim with its lines
+    resource function get claims/[string claimId]() returns ClaimDetail|ErrorUnauthorized|ErrorNotFound|http:InternalServerError {
+        ClaimDetail|error detail = getAnyClaim(claimId);
+        if detail is error {
+            if detail is NotFoundError {
+                return notFound();
+            }
+            return serverFailure(detail, "reading a claim");
+        }
+        return detail;
     }
     // Not built yet: a later feature item implements this operation.
     resource function get claims/[string claimId]/lines/[string lineId]/receipts/[string receiptId]/file() returns byte[]|ErrorUnauthorized|ErrorNotFound {
         return notFound();
     }
-    // Not built yet: a later feature item implements this operation.
-    resource function get exports(int 'limit = 20, int offset = 0) returns ExportPage|ErrorUnauthorized {
-        return {count: 0, data: []};
+    # Past payroll exports, newest first
+    resource function get exports(int 'limit = 20, int offset = 0) returns ExportPage|ErrorUnauthorized|http:InternalServerError {
+        ExportPage|error page = listExports('limit, offset);
+        if page is error {
+            return serverFailure(page, "listing exports");
+        }
+        return page;
     }
-    // Not built yet: a later feature item implements this operation.
-    resource function get exports/[string exportId]/file() returns string|ErrorUnauthorized|ErrorNotFound {
-        return notFound();
+    # Download an export as CSV, regenerated from its claims
+    resource function get exports/[string exportId]/file() returns http:Response|ErrorUnauthorized|ErrorNotFound|http:InternalServerError {
+        string|error csv = exportCsv(exportId);
+        if csv is error {
+            if csv is NotFoundError {
+                return notFound();
+            }
+            return serverFailure(csv, "generating an export file");
+        }
+        http:Response response = new;
+        response.setTextPayload(csv, "text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=\"payroll-export-" + exportId.toLowerAscii() + ".csv\"");
+        return response;
     }
     # The caller's claims, newest first
     resource function get me/claims(http:RequestContext ctx, "Draft"|"Submitted"|"Approved"|"Rejected"|"Exported"? status, int 'limit = 20, int offset = 0) returns ClaimPage|ErrorUnauthorized|http:InternalServerError {
@@ -159,9 +184,25 @@ service http:InterceptableService / on ep0 {
         return notImplemented();
     }
 
-    // Not built yet: a later feature item implements this operation.
-    resource function post exports(@http:Payload ExportInput payload) returns Export|ErrorBadRequest|ErrorUnauthorized {
-        return notImplemented();
+    # Export the chosen approved claims and mark them Exported
+    resource function post exports(http:RequestContext ctx, http:Request request, @http:Payload ExportInput payload) returns ExportCreated|ErrorBadRequest|ErrorUnauthorized|http:InternalServerError {
+        GatewayCaller|http:Unauthorized caller = requireGatewayCaller(ctx);
+        if caller !is GatewayCaller {
+            return unauthorized();
+        }
+        Me|error me = ensurePerson(caller.userId, callerProfile(request, caller));
+        if me is error {
+            return serverFailure(me, "resolving the caller's person record");
+        }
+        Export|error created = createExport(me.id, payload.claimIds);
+        if created is error {
+            if created is RuleError {
+                return badRequest(created);
+            }
+            return serverFailure(created, "creating an export");
+        }
+        ExportCreated response = {body: created, headers: {"Location": "/exports/" + created.id}};
+        return response;
     }
 
     # Create a draft claim for the caller
