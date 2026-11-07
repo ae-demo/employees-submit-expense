@@ -18,7 +18,7 @@ Needs: F1.
 
 - Receipts attach to individual expense lines, not to the claim as a whole.
 - Accepted receipt files are images and PDFs.
-- A receipt is optional here; Expense policy limits (F5) can require one by rule.
+- A receipt is always optional; no rule requires one.
 - Receipts can be added or removed while the claim is Draft or Submitted, and are fixed once it is decided.
 - Employees enter expense details themselves; receipts are not read automatically.
 - A maximum receipt file size applies. *assumed*

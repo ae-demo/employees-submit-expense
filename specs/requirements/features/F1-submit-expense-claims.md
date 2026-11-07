@@ -22,6 +22,7 @@ Employees create, submit and track expense claims.
 - A claim cannot be submitted with no expense lines. *assumed*
 - Editing a submitted claim keeps it Submitted, and the manager sees the updated version. *assumed*
 - A withdrawn claim returns to Draft. *assumed*
+- An employee with no manager assigned cannot submit a claim and is told to ask Finance to assign one. *assumed*
 
 ## Out of Scope
 

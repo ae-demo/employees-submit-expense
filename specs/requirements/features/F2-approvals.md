@@ -24,6 +24,8 @@ Needs: F1.
 - While a manager is away, claims wait; there are no deputies.
 - Email notification uses a transactional email service.
 - A decided claim can no longer be changed by the manager. *assumed*
+- Finance assigns each employee's manager on a People screen. *assumed*
+- A manager never decides their own claim; their own claims go to their own manager. *assumed*
 
 ## Out of Scope
 

@@ -21,6 +21,8 @@ Needs: F1.
 - A claim that breaks a limit cannot be submitted.
 - Limits are checked on submit; changing a limit does not affect claims already submitted. *assumed*
 - A category with no maximum has no limit. *assumed*
+- Finance creates the expense categories, each with an optional maximum. *assumed*
+- An expense line whose amount equals the maximum is allowed. *assumed*
 
 ## Out of Scope
 
