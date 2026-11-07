@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Alert, AlertTitle, AppBreadcrumbs, Button, Card, CardContent, CardHeader, Chip, Grid, ListingTable, PageContent, PageTitle, Stack, Typography } from "@wso2/oxygen-ui";
 import { Link as RouterLink } from "react-router-dom";
 import { expenseApi } from "../api";
+import { ReceiptLinks } from "./receipts";
 import { StatusChip, errorLines, isEditable, money, useMyClaim } from "./claimsShared";
 
 function Field({ label, value }: { label: string; value: string }): ReactElement {
@@ -128,13 +129,14 @@ export function ClaimDetailPage(): ReactElement {
                 <ListingTable.Cell>Date</ListingTable.Cell>
                 <ListingTable.Cell>Category</ListingTable.Cell>
                 <ListingTable.Cell>Description</ListingTable.Cell>
+                <ListingTable.Cell>Receipt</ListingTable.Cell>
                 <ListingTable.Cell align="right">Amount</ListingTable.Cell>
               </ListingTable.Row>
             </ListingTable.Head>
             <ListingTable.Body>
               {claim.lines.length === 0 && (
                 <ListingTable.Row>
-                  <ListingTable.Cell colSpan={4}>
+                  <ListingTable.Cell colSpan={5}>
                     <ListingTable.EmptyState title="No expense lines" description="Lines added to this claim appear here." />
                   </ListingTable.Cell>
                 </ListingTable.Row>
@@ -144,6 +146,9 @@ export function ClaimDetailPage(): ReactElement {
                   <ListingTable.Cell>{l.expenseDate}</ListingTable.Cell>
                   <ListingTable.Cell>{l.category}</ListingTable.Cell>
                   <ListingTable.Cell>{l.description}</ListingTable.Cell>
+                  <ListingTable.Cell>
+                    <ReceiptLinks scope="own" claimId={claim.id} lineId={l.id} receipts={l.receipts} />
+                  </ListingTable.Cell>
                   <ListingTable.Cell align="right">{money(l.amountCents)}</ListingTable.Cell>
                 </ListingTable.Row>
               ))}

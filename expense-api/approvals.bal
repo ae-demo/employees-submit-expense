@@ -75,7 +75,7 @@ function loadTeamClaim(string subject, string claimId) returns TeamClaim|error {
 
 function getTeamClaim(string subject, string claimId) returns ClaimDetail|error {
     TeamClaim claim = check loadTeamClaim(subject, claimId);
-    return loadDetail(claim.id);
+    return loadDetail(claim.id, "/me/team/claims");
 }
 
 function approveClaim(string subject, string claimId) returns ClaimDetail|error {
@@ -109,7 +109,7 @@ function decideClaim(TeamClaim claim, "approve"|"reject" action, string? reason)
         check recordAudit({action, actorId: claim.managerId, claimId: claim.id, detail: detailText});
         check commit;
     }
-    ClaimDetail detail = check loadDetail(claim.id);
+    ClaimDetail detail = check loadDetail(claim.id, "/me/team/claims");
     if claim.employeeEmail.trim() == "" {
         log:printWarn("employee has no email address; notification skipped", claim = claim.number);
     } else if approving {

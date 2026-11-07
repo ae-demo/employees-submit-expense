@@ -20,6 +20,7 @@ dependencies = [
 	{org = "ballerina", name = "lang.int"},
 	{org = "ballerina", name = "lang.regexp"},
 	{org = "ballerina", name = "log"},
+	{org = "ballerina", name = "mime"},
 	{org = "ballerina", name = "os"},
 	{org = "ballerina", name = "sql"},
 	{org = "ballerina", name = "time"},
@@ -279,6 +280,9 @@ dependencies = [
 	{org = "ballerina", name = "jballerina.java"},
 	{org = "ballerina", name = "lang.int"},
 	{org = "ballerina", name = "log"}
+]
+modules = [
+	{org = "ballerina", packageName = "mime", moduleName = "mime"}
 ]
 
 [[package]]

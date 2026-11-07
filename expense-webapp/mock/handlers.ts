@@ -151,6 +151,26 @@ function lineFrom(id: string, input: LineInput): ExpenseLine | null {
   return { id, expenseDate: input.expenseDate, category: category.name, amountCents: input.amountCents, description: input.description, receipts: [] };
 }
 
+// Receipt bytes by receipt id. A seeded receipt has none, so its download serves a small placeholder document.
+const MAX_RECEIPT_BYTES = 10 * 1024 * 1024;
+const receiptFiles = new Map<string, { data: ArrayBuffer; type: string }>();
+let nextReceipt = 100;
+const isReceiptType = (t: string, name: string): boolean =>
+  t.startsWith("image/") || t === "application/pdf" || (t === "" && /\.(pdf|png|jpe?g|gif|webp)$/i.test(name));
+
+function receiptFile(c: StoredClaim | undefined, lineId: unknown, receiptId: unknown) {
+  const r = c?.lines.find((l) => l.id === lineId)?.receipts.find((x) => x.id === receiptId);
+  if (!r) return err(404, "Not found", "The receipt does not exist.");
+  const stored = receiptFiles.get(r.id);
+  const body = stored?.data ?? new TextEncoder().encode(`Mock receipt: ${r.fileName}\n`).buffer;
+  return new HttpResponse(body, {
+    headers: {
+      "Content-Type": stored?.type || r.contentType,
+      "Content-Disposition": `attachment; filename="${r.fileName}"`,
+    },
+  });
+}
+
 export const handlers = [
   http.get("/api/me", () => HttpResponse.json(me)),
 
@@ -224,6 +244,53 @@ export const handlers = [
     c.lines.splice(idx, 1);
     return new HttpResponse(null, { status: 204 });
   }),
+
+  http.post("/api/me/claims/:claimId/lines/:lineId/receipts", async ({ params, request }) => {
+    const c = find(params.claimId);
+    if (!c) return notFound();
+    if (!editable(c)) return decided();
+    const l = c.lines.find((x) => x.id === params.lineId);
+    if (!l) return err(404, "Not found", "The line does not exist.");
+    const file = (await request.formData()).get("file");
+    if (!(file instanceof File)) return err(400, "File required", "Choose a receipt file.");
+    if (!isReceiptType(file.type, file.name)) return err(400, "Unsupported file", "Receipts must be images or PDFs.");
+    if (file.size === 0) return err(400, "Empty file", "The receipt file is empty.");
+    if (file.size > MAX_RECEIPT_BYTES) return err(400, "File too large", "Receipts can be up to 10 MB.");
+    const id = uid("f000", nextReceipt);
+    nextReceipt += 1;
+    const type = file.type || (/\.pdf$/i.test(file.name) ? "application/pdf" : "image/jpeg");
+    receiptFiles.set(id, { data: await file.arrayBuffer(), type });
+    const receipt = {
+      id, fileName: file.name, contentType: type,
+      fileUrl: `/me/claims/${c.id}/lines/${l.id}/receipts/${id}/file`,
+    };
+    l.receipts.push(receipt);
+    return HttpResponse.json(receipt, { status: 201 });
+  }),
+
+  http.delete("/api/me/claims/:claimId/lines/:lineId/receipts/:receiptId", ({ params }) => {
+    const c = find(params.claimId);
+    if (!c) return notFound();
+    if (!editable(c)) return decided();
+    const l = c.lines.find((x) => x.id === params.lineId);
+    const idx = l ? l.receipts.findIndex((r) => r.id === params.receiptId) : -1;
+    if (!l || idx < 0) return err(404, "Not found", "The receipt does not exist.");
+    receiptFiles.delete(l.receipts[idx].id);
+    l.receipts.splice(idx, 1);
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.get("/api/me/claims/:claimId/lines/:lineId/receipts/:receiptId/file", ({ params }) =>
+    receiptFile(find(params.claimId), params.lineId, params.receiptId),
+  ),
+
+  http.get("/api/me/team/claims/:claimId/lines/:lineId/receipts/:receiptId/file", ({ params }) =>
+    receiptFile(findTeam(params.claimId), params.lineId, params.receiptId),
+  ),
+
+  http.get("/api/claims/:claimId/lines/:lineId/receipts/:receiptId/file", ({ params }) =>
+    receiptFile(claims.find((x) => x.id === params.claimId), params.lineId, params.receiptId),
+  ),
 
   http.post("/api/me/claims/:claimId/submit", ({ params }) => {
     const c = find(params.claimId);

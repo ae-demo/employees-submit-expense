@@ -5,6 +5,7 @@ import {
   Typography,
 } from "@wso2/oxygen-ui";
 import { expenseApi } from "../api";
+import { ReceiptLinks } from "./receipts";
 import { StatusChip, money, type ClaimDetail, type LoadState } from "./claimsShared";
 
 function Field({ label, value }: { label: string; value: string }): ReactElement {
@@ -116,7 +117,7 @@ export function FinanceClaimPage(): ReactElement {
                   <ListingTable.Cell>{l.expenseDate}</ListingTable.Cell>
                   <ListingTable.Cell>{l.category}</ListingTable.Cell>
                   <ListingTable.Cell>{l.description}</ListingTable.Cell>
-                  <ListingTable.Cell>{l.receipts.length === 0 ? "No receipt" : l.receipts.map((r) => r.fileName).join(", ")}</ListingTable.Cell>
+                  <ListingTable.Cell><ReceiptLinks scope="all" claimId={claim.id} lineId={l.id} receipts={l.receipts} /></ListingTable.Cell>
                   <ListingTable.Cell align="right">{money(l.amountCents)}</ListingTable.Cell>
                 </ListingTable.Row>
               ))}

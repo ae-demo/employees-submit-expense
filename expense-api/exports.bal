@@ -59,7 +59,7 @@ function getAnyClaim(string claimId) returns ClaimDetail|error {
     if found == 0 {
         return error NotFoundError("no such claim");
     }
-    return loadDetail(claimId);
+    return loadDetail(claimId, "/claims");
 }
 
 function exportSelect() returns sql:ParameterizedQuery {

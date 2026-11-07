@@ -5,6 +5,10 @@ import {
   PageContent, PageTitle, Stack, TextField, Typography,
 } from "@wso2/oxygen-ui";
 import { expenseApi } from "../api";
+import { Can } from "../authz/gates";
+import {
+  AttachReceiptDialog, ReceiptLinks, RECEIPT_ACCEPT, RECEIPT_HELP, checkReceipt, removeReceipt, uploadReceipt,
+} from "./receipts";
 import { StatusChip, errorLines, isEditable, money, useMyClaim, type Category, type ClaimDetail } from "./claimsShared";
 
 const today = (): string => new Date().toISOString().slice(0, 10);
@@ -94,6 +98,8 @@ function LineForm({
   const [description, setDescription] = useState(editing?.description ?? "");
   const [issues, setIssues] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const [receipt, setReceipt] = useState<File | null>(null);
+  const [receiptKey, setReceiptKey] = useState(0);
 
   useEffect(() => {
     if (!categoryId && categories.length > 0) setCategoryId(categories[0].id);
@@ -107,21 +113,28 @@ function LineForm({
     if (!categoryId) found.push("Choose a category");
     if (!Number.isFinite(cents) || cents < 1) found.push("Enter an amount greater than zero");
     if (description.trim() === "") found.push("Describe the expense");
+    const receiptProblem = !editing && receipt ? checkReceipt(receipt) : null;
+    if (receiptProblem) found.push(receiptProblem);
     setIssues(found);
     if (found.length > 0) return;
     setBusy(true);
     const body = { expenseDate: date, categoryId, amountCents: cents, description: description.trim() };
     try {
       const params = { path: { claimId, lineId: editing?.id ?? "" } };
-      const { error, response } = editing
+      const { error, response, data } = editing
         ? await expenseApi.PUT("/me/claims/{claimId}/lines/{lineId}", { params, body })
         : await expenseApi.POST("/me/claims/{claimId}/lines", { params: { path: { claimId } }, body });
       if (response.ok) {
+        let receiptFailure: string | null = null;
+        if (!editing && receipt && data) receiptFailure = await uploadReceipt(claimId, (data as Line).id, receipt);
         await onDone();
         if (!editing) {
           setAmount("");
           setDescription("");
+          setReceipt(null);
+          setReceiptKey((k) => k + 1);
         }
+        if (receiptFailure) setIssues([`The line was added, but the receipt was not attached. ${receiptFailure}`]);
       } else setIssues(errorLines(error, "The line could not be saved."));
     } catch {
       setIssues(["The line could not be saved."]);
@@ -160,6 +173,18 @@ function LineForm({
             slotProps={{ htmlInput: { min: 0, step: "0.01" } }}
           />
           <TextField label="Description" required value={description} onChange={(e) => setDescription(e.target.value)} />
+          {!editing && (
+            <Can op="POST /me/claims/{claimId}/lines/{lineId}/receipts">
+              <TextField
+                key={receiptKey}
+                label="Receipt file (optional)"
+                type="file"
+                helperText={RECEIPT_HELP}
+                onChange={(e) => setReceipt((e.target as HTMLInputElement).files?.[0] ?? null)}
+                slotProps={{ htmlInput: { accept: RECEIPT_ACCEPT }, inputLabel: { shrink: true } }}
+              />
+            </Can>
+          )}
           <Stack direction="row" justifyContent="flex-end" spacing={2}>
             {editing && (
               <Button variant="outlined" onClick={onCancel}>
@@ -182,6 +207,7 @@ function EditClaim({ claimId }: { claimId: string }): ReactElement {
   const [categories, setCategories] = useState<Category[]>([]);
   const [issues, setIssues] = useState<string[]>([]);
   const [editing, setEditing] = useState<Line | null>(null);
+  const [attachTo, setAttachTo] = useState<Line | null>(null);
   const [description, setDescription] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -273,6 +299,14 @@ function EditClaim({ claimId }: { claimId: string }): ReactElement {
     }
   };
 
+  const detachReceipt = async (lineId: string, receiptId: string): Promise<void> => {
+    const ok = await run(async () => {
+      const failed = await removeReceipt(claimId, lineId, receiptId);
+      return { ok: failed === null, error: failed ? { message: failed } : undefined };
+    }, "The receipt could not be removed.");
+    if (ok) await reload();
+  };
+
   return (
     <PageContent>
       <AppBreadcrumbs
@@ -352,6 +386,7 @@ function EditClaim({ claimId }: { claimId: string }): ReactElement {
                 <ListingTable.Cell>Date</ListingTable.Cell>
                 <ListingTable.Cell>Category</ListingTable.Cell>
                 <ListingTable.Cell>Description</ListingTable.Cell>
+                <ListingTable.Cell>Receipt</ListingTable.Cell>
                 <ListingTable.Cell align="right">Amount</ListingTable.Cell>
                 <ListingTable.Cell />
               </ListingTable.Row>
@@ -359,7 +394,7 @@ function EditClaim({ claimId }: { claimId: string }): ReactElement {
             <ListingTable.Body>
               {claim.lines.length === 0 && (
                 <ListingTable.Row>
-                  <ListingTable.Cell colSpan={5}>
+                  <ListingTable.Cell colSpan={6}>
                     <ListingTable.EmptyState title="No expense lines" description="Add the first expense below." />
                   </ListingTable.Cell>
                 </ListingTable.Row>
@@ -369,10 +404,25 @@ function EditClaim({ claimId }: { claimId: string }): ReactElement {
                   <ListingTable.Cell>{l.expenseDate}</ListingTable.Cell>
                   <ListingTable.Cell>{l.category}</ListingTable.Cell>
                   <ListingTable.Cell>{l.description}</ListingTable.Cell>
+                  <ListingTable.Cell>
+                    <ReceiptLinks
+                      scope="own"
+                      claimId={claimId}
+                      lineId={l.id}
+                      receipts={l.receipts}
+                      busy={busy}
+                      onRemove={editable ? (r) => void detachReceipt(l.id, r.id) : undefined}
+                    />
+                  </ListingTable.Cell>
                   <ListingTable.Cell align="right">{money(l.amountCents)}</ListingTable.Cell>
                   <ListingTable.Cell>
                     {editable && (
                       <ListingTable.RowActions visibility="always">
+                        <Can op="POST /me/claims/{claimId}/lines/{lineId}/receipts">
+                          <Button size="small" variant="text" disabled={busy} onClick={() => setAttachTo(l)}>
+                            Attach receipt
+                          </Button>
+                        </Can>
                         <Button size="small" variant="text" onClick={() => setEditing(l)}>
                           Edit line
                         </Button>
@@ -401,6 +451,14 @@ function EditClaim({ claimId }: { claimId: string }): ReactElement {
           />
         )}
       </Stack>
+      <AttachReceiptDialog
+        open={attachTo !== null}
+        claimId={claimId}
+        lineId={attachTo?.id ?? ""}
+        lineLabel={attachTo ? `${attachTo.category}, ${attachTo.description} (${money(attachTo.amountCents)})` : ""}
+        onClose={() => setAttachTo(null)}
+        onAttached={reload}
+      />
     </PageContent>
   );
 }

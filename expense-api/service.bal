@@ -1,7 +1,8 @@
 import ballerina/http;
 import ballerina/log;
 
-listener http:Listener ep0 = new (9090);
+// A little above the 10 MB receipt limit, so the service itself answers an oversized file with 400.
+listener http:Listener ep0 = new (9090, requestLimits = {maxEntityBodySize: 11534336});
 
 service http:InterceptableService / on ep0 {
     public function createInterceptors() returns AssertionInterceptor => new;
@@ -39,9 +40,23 @@ service http:InterceptableService / on ep0 {
         return http:NO_CONTENT;
     }
 
-    // Not built yet: a later feature item implements this operation.
-    resource function delete me/claims/[string claimId]/lines/[string lineId]/receipts/[string receiptId]() returns http:NoContent|ErrorBadRequest|ErrorUnauthorized|ErrorNotFound {
-        return notFound();
+    # Remove a receipt from the caller's line until the claim is decided
+    resource function delete me/claims/[string claimId]/lines/[string lineId]/receipts/[string receiptId](http:RequestContext ctx) returns http:NoContent|ErrorBadRequest|ErrorUnauthorized|ErrorNotFound|http:InternalServerError {
+        GatewayCaller|http:Unauthorized caller = requireGatewayCaller(ctx);
+        if caller !is GatewayCaller {
+            return unauthorized();
+        }
+        error? removed = removeReceipt(caller.userId, claimId, lineId, receiptId);
+        if removed is error {
+            if removed is NotFoundError {
+                return notFound();
+            }
+            if removed is RuleError {
+                return badRequest(removed);
+            }
+            return serverFailure(removed, "removing a receipt");
+        }
+        return http:NO_CONTENT;
     }
 
     # Every category with its maximum, for any signed-in person
@@ -76,9 +91,16 @@ service http:InterceptableService / on ep0 {
         }
         return detail;
     }
-    // Not built yet: a later feature item implements this operation.
-    resource function get claims/[string claimId]/lines/[string lineId]/receipts/[string receiptId]/file() returns byte[]|ErrorUnauthorized|ErrorNotFound {
-        return notFound();
+    # The receipt file of any claim
+    resource function get claims/[string claimId]/lines/[string lineId]/receipts/[string receiptId]/file() returns http:Response|ErrorUnauthorized|ErrorNotFound|http:InternalServerError {
+        http:Response|error file = downloadAnyReceipt(claimId, lineId, receiptId);
+        if file is error {
+            if file is NotFoundError {
+                return notFound();
+            }
+            return serverFailure(file, "reading a receipt");
+        }
+        return file;
     }
     # Past payroll exports, newest first
     resource function get exports(int 'limit = 20, int offset = 0) returns ExportPage|ErrorUnauthorized|http:InternalServerError {
@@ -131,9 +153,20 @@ service http:InterceptableService / on ep0 {
         return detail;
     }
 
-    // Not built yet: a later feature item implements this operation.
-    resource function get me/claims/[string claimId]/lines/[string lineId]/receipts/[string receiptId]/file() returns byte[]|ErrorUnauthorized|ErrorNotFound {
-        return notFound();
+    # The receipt file, for the claim's reach
+    resource function get me/claims/[string claimId]/lines/[string lineId]/receipts/[string receiptId]/file(http:RequestContext ctx) returns http:Response|ErrorUnauthorized|ErrorNotFound|http:InternalServerError {
+        GatewayCaller|http:Unauthorized caller = requireGatewayCaller(ctx);
+        if caller !is GatewayCaller {
+            return unauthorized();
+        }
+        http:Response|error file = downloadOwnReceipt(caller.userId, claimId, lineId, receiptId);
+        if file is error {
+            if file is NotFoundError {
+                return notFound();
+            }
+            return serverFailure(file, "reading a receipt");
+        }
+        return file;
     }
 
     # Claims of the caller's direct reports, oldest submission first; never drafts
@@ -165,9 +198,20 @@ service http:InterceptableService / on ep0 {
         return detail;
     }
 
-    // Not built yet: a later feature item implements this operation.
-    resource function get me/team/claims/[string claimId]/lines/[string lineId]/receipts/[string receiptId]/file() returns byte[]|ErrorUnauthorized|ErrorNotFound {
-        return notFound();
+    # The receipt file, for the claim's reach
+    resource function get me/team/claims/[string claimId]/lines/[string lineId]/receipts/[string receiptId]/file(http:RequestContext ctx) returns http:Response|ErrorUnauthorized|ErrorNotFound|http:InternalServerError {
+        GatewayCaller|http:Unauthorized caller = requireGatewayCaller(ctx);
+        if caller !is GatewayCaller {
+            return unauthorized();
+        }
+        http:Response|error file = downloadTeamReceipt(caller.userId, claimId, lineId, receiptId);
+        if file is error {
+            if file is NotFoundError {
+                return notFound();
+            }
+            return serverFailure(file, "reading a receipt");
+        }
+        return file;
     }
 
     # Every employee who has signed in, with their manager
@@ -247,9 +291,24 @@ service http:InterceptableService / on ep0 {
         return created;
     }
 
-    // Not built yet: a later feature item implements this operation.
-    resource function post me/claims/[string claimId]/lines/[string lineId]/receipts(http:Request request) returns Receipt|ErrorBadRequest|ErrorUnauthorized|ErrorNotFound {
-        return notFound();
+    # Attach a receipt file to the caller's line until the claim is decided
+    resource function post me/claims/[string claimId]/lines/[string lineId]/receipts(http:RequestContext ctx, http:Request request) returns ReceiptCreated|ErrorBadRequest|ErrorUnauthorized|ErrorNotFound|http:InternalServerError {
+        GatewayCaller|http:Unauthorized caller = requireGatewayCaller(ctx);
+        if caller !is GatewayCaller {
+            return unauthorized();
+        }
+        Receipt|error receipt = uploadReceipt(caller.userId, claimId, lineId, request);
+        if receipt is error {
+            if receipt is NotFoundError {
+                return notFound();
+            }
+            if receipt is RuleError {
+                return badRequest(receipt);
+            }
+            return serverFailure(receipt, "storing a receipt");
+        }
+        ReceiptCreated created = {body: receipt};
+        return created;
     }
 
     # Submit the caller's draft or rejected claim to their manager

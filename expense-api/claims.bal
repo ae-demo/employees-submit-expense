@@ -127,7 +127,8 @@ function loadOwnedClaim(string subject, string claimId) returns OwnedClaim|error
     return row;
 }
 
-function loadLines(string claimId) returns ExpenseLine[]|error {
+function loadLines(string claimId, string prefix = "/me/claims") returns ExpenseLine[]|error {
+    map<Receipt[]> receiptsByLine = check loadReceipts(claimId, prefix);
     sql:ParameterizedQuery query = `SELECT l.id::text AS id, to_char(l.expense_date, 'YYYY-MM-DD') AS "expenseDate",
             k.name AS category, l.amount_cents AS "amountCents", l.description AS description
         FROM expense_lines l JOIN categories k ON k.id = l.category_id
@@ -136,24 +137,23 @@ function loadLines(string claimId) returns ExpenseLine[]|error {
     ExpenseLine[] lines = [];
     check from LineRow row in rows
         do {
-            // receipts belong to F4; the list stays empty until that item fills it
             lines.push({
                 id: row.id,
                 expenseDate: row.expenseDate,
                 category: row.category,
                 amountCents: row.amountCents,
                 description: row.description,
-                receipts: []
+                receipts: receiptsByLine[row.id] ?: []
             });
         };
     return lines;
 }
 
-function loadDetail(string claimId) returns ClaimDetail|error {
+function loadDetail(string claimId, string prefix = "/me/claims") returns ClaimDetail|error {
     sql:ParameterizedQuery query = sql:queryConcat(summarySelect(), ` WHERE c.id = ${claimId}::uuid`);
     SummaryRow row = check db->queryRow(query);
     ClaimSummary summary = check summaryFrom(row);
-    ExpenseLine[] lines = check loadLines(claimId);
+    ExpenseLine[] lines = check loadLines(claimId, prefix);
     ClaimDetail detail = {
         id: summary.id,
         number: summary.number,
