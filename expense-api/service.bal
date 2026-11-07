@@ -111,14 +111,33 @@ service http:InterceptableService / on ep0 {
         return notFound();
     }
 
-    // Not built yet: a later feature item implements this operation.
-    resource function get me/team/claims("Submitted"|"Approved"|"Rejected"|"Exported"? status, int 'limit = 20, int offset = 0) returns ClaimPage|ErrorUnauthorized {
-        return {count: 0, data: []};
+    # Claims of the caller's direct reports, oldest submission first; never drafts
+    resource function get me/team/claims(http:RequestContext ctx, "Submitted"|"Approved"|"Rejected"|"Exported"? status, int 'limit = 20, int offset = 0) returns ClaimPage|ErrorUnauthorized|http:InternalServerError {
+        GatewayCaller|http:Unauthorized caller = requireGatewayCaller(ctx);
+        if caller !is GatewayCaller {
+            return unauthorized();
+        }
+        ClaimPage|error page = listTeamClaims(caller.userId, status, 'limit, offset);
+        if page is error {
+            return serverFailure(page, "listing team claims");
+        }
+        return page;
     }
 
-    // Not built yet: a later feature item implements this operation.
-    resource function get me/team/claims/[string claimId]() returns ClaimDetail|ErrorUnauthorized|ErrorNotFound {
-        return notFound();
+    # One claim of a direct report with its lines
+    resource function get me/team/claims/[string claimId](http:RequestContext ctx) returns ClaimDetail|ErrorUnauthorized|ErrorNotFound|http:InternalServerError {
+        GatewayCaller|http:Unauthorized caller = requireGatewayCaller(ctx);
+        if caller !is GatewayCaller {
+            return unauthorized();
+        }
+        ClaimDetail|error detail = getTeamClaim(caller.userId, claimId);
+        if detail is error {
+            if detail is NotFoundError {
+                return notFound();
+            }
+            return serverFailure(detail, "reading a team claim");
+        }
+        return detail;
     }
 
     // Not built yet: a later feature item implements this operation.
@@ -126,9 +145,13 @@ service http:InterceptableService / on ep0 {
         return notFound();
     }
 
-    // Not built yet: a later feature item implements this operation.
-    resource function get people(int 'limit = 20, int offset = 0) returns PersonPage|ErrorUnauthorized {
-        return {count: 0, data: []};
+    # Every employee who has signed in, with their manager
+    resource function get people(int 'limit = 20, int offset = 0) returns PersonPage|http:InternalServerError {
+        PersonPage|error page = listPeople('limit, offset);
+        if page is error {
+            return serverFailure(page, "listing people");
+        }
+        return page;
     }
 
     // Not built yet: a later feature item implements this operation.
@@ -229,14 +252,44 @@ service http:InterceptableService / on ep0 {
         return ok;
     }
 
-    // Not built yet: a later feature item implements this operation.
-    resource function post me/team/claims/[string claimId]/approve() returns ClaimDetailOk|ErrorBadRequest|ErrorUnauthorized|ErrorNotFound {
-        return notFound();
+    # Approve a direct report's submitted claim
+    resource function post me/team/claims/[string claimId]/approve(http:RequestContext ctx) returns ClaimDetailOk|ErrorBadRequest|ErrorUnauthorized|ErrorNotFound|http:InternalServerError {
+        GatewayCaller|http:Unauthorized caller = requireGatewayCaller(ctx);
+        if caller !is GatewayCaller {
+            return unauthorized();
+        }
+        ClaimDetail|error detail = approveClaim(caller.userId, claimId);
+        if detail is error {
+            if detail is NotFoundError {
+                return notFound();
+            }
+            if detail is RuleError {
+                return badRequest(detail);
+            }
+            return serverFailure(detail, "approving a claim");
+        }
+        ClaimDetailOk ok = {body: detail};
+        return ok;
     }
 
-    // Not built yet: a later feature item implements this operation.
-    resource function post me/team/claims/[string claimId]/reject(@http:Payload Rejection payload) returns ClaimDetailOk|ErrorBadRequest|ErrorUnauthorized|ErrorNotFound {
-        return notFound();
+    # Reject a direct report's submitted claim with a reason
+    resource function post me/team/claims/[string claimId]/reject(http:RequestContext ctx, @http:Payload Rejection payload) returns ClaimDetailOk|ErrorBadRequest|ErrorUnauthorized|ErrorNotFound|http:InternalServerError {
+        GatewayCaller|http:Unauthorized caller = requireGatewayCaller(ctx);
+        if caller !is GatewayCaller {
+            return unauthorized();
+        }
+        ClaimDetail|error detail = rejectClaim(caller.userId, claimId, payload.reason);
+        if detail is error {
+            if detail is NotFoundError {
+                return notFound();
+            }
+            if detail is RuleError {
+                return badRequest(detail);
+            }
+            return serverFailure(detail, "rejecting a claim");
+        }
+        ClaimDetailOk ok = {body: detail};
+        return ok;
     }
 
     // Not built yet: a later feature item implements this operation.
@@ -282,9 +335,19 @@ service http:InterceptableService / on ep0 {
         return line;
     }
 
-    // Not built yet: a later feature item implements this operation.
-    resource function put people/[string personId]/manager(@http:Payload ManagerAssignment payload) returns Person|ErrorBadRequest|ErrorUnauthorized|ErrorNotFound {
-        return notFound();
+    # Assign, change or remove an employee's manager
+    resource function put people/[string personId]/manager(@http:Payload ManagerAssignment payload) returns Person|ErrorBadRequest|ErrorUnauthorized|ErrorNotFound|http:InternalServerError {
+        Person|error person = assignManager(personId, payload?.managerId);
+        if person is error {
+            if person is NotFoundError {
+                return notFound();
+            }
+            if person is RuleError {
+                return badRequest(person);
+            }
+            return serverFailure(person, "assigning a manager");
+        }
+        return person;
     }
 
 }

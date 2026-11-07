@@ -6,6 +6,7 @@ type Category = components["schemas"]["Category"];
 type ClaimSummary = components["schemas"]["ClaimSummary"];
 type ExpenseLine = components["schemas"]["ExpenseLine"];
 type LineInput = components["schemas"]["ExpenseLineInput"];
+type Person = components["schemas"]["Person"];
 
 // State lives in the page's own JS context: a full page load re-seeds it.
 // Feature items add the claim, category, people and export handlers here.
@@ -32,8 +33,13 @@ interface StoredClaim extends Omit<ClaimSummary, "totalCents"> {
   lines: ExpenseLine[];
 }
 
-const line = (n: number, expenseDate: string, category: string, amountCents: number, description: string): ExpenseLine => ({
-  id: uid("d000", n), expenseDate, category, amountCents, description, receipts: [],
+const line = (
+  n: number, expenseDate: string, category: string, amountCents: number, description: string, receipt?: string,
+): ExpenseLine => ({
+  id: uid("d000", n), expenseDate, category, amountCents, description,
+  receipts: receipt
+    ? [{ id: uid("f000", n), fileName: receipt, contentType: receipt.endsWith(".pdf") ? "application/pdf" : "image/jpeg", fileUrl: "" }]
+    : [],
 });
 
 // Maya's five claims, one per status (prototype claims cl1..cl5).
@@ -41,12 +47,12 @@ const claims: StoredClaim[] = [
   {
     id: uid("a000", 1), number: "EXP-1041", employeeName: me.name, description: "Client visit, Colombo", status: "Draft",
     submittedOn: null, decidedOn: null, rejectionReason: null,
-    lines: [line(1, "2026-01-10", "Travel", 4200, "Taxi to client office"), line(2, "2026-01-10", "Meals", 3600, "Client lunch")],
+    lines: [line(1, "2026-01-10", "Travel", 4200, "Taxi to client office", "taxi-0110.pdf"), line(2, "2026-01-10", "Meals", 3600, "Client lunch")],
   },
   {
     id: uid("a000", 2), number: "EXP-1042", employeeName: me.name, description: "Conference trip", status: "Submitted",
     submittedOn: "2026-01-12", decidedOn: null, rejectionReason: null,
-    lines: [line(3, "2026-01-08", "Accommodation", 18000, "Hotel, one night"), line(4, "2026-01-08", "Travel", 12500, "Return flight")],
+    lines: [line(3, "2026-01-08", "Accommodation", 18000, "Hotel, one night", "hotel.pdf"), line(4, "2026-01-08", "Travel", 12500, "Return flight", "flight.pdf")],
   },
   {
     id: uid("a000", 3), number: "EXP-1038", employeeName: me.name, description: "Team lunch", status: "Rejected",
@@ -57,14 +63,51 @@ const claims: StoredClaim[] = [
   {
     id: uid("a000", 4), number: "EXP-1030", employeeName: me.name, description: "Taxi in December", status: "Approved",
     submittedOn: "2025-12-22", decidedOn: "2026-01-05", rejectionReason: null,
-    lines: [line(6, "2025-12-20", "Travel", 2750, "Taxi")],
+    lines: [line(6, "2025-12-20", "Travel", 2750, "Taxi", "taxi.jpg")],
   },
   {
     id: uid("a000", 5), number: "EXP-1022", employeeName: me.name, description: "Airport transfers", status: "Exported",
     submittedOn: "2025-12-13", decidedOn: "2025-12-15", rejectionReason: null,
-    lines: [line(7, "2025-12-12", "Travel", 6400, "Airport transfers")],
+    lines: [line(7, "2025-12-12", "Travel", 6400, "Airport transfers", "transfer.pdf")],
   },
 ];
+
+// Dan Weerasinghe's claims (prototype cl6, cl7): the other direct report of Ravi.
+claims.push(
+  {
+    id: uid("a000", 6), number: "EXP-1044", employeeName: "Dan Weerasinghe", description: "Training books", status: "Submitted",
+    submittedOn: "2026-01-09", decidedOn: null, rejectionReason: null,
+    lines: [line(8, "2026-01-09", "Office supplies", 5900, "Training books", "books.pdf")],
+  },
+  {
+    id: uid("a000", 7), number: "EXP-1035", employeeName: "Dan Weerasinghe", description: "Hotel in Kandy", status: "Approved",
+    submittedOn: "2026-01-04", decidedOn: "2026-01-12", rejectionReason: null,
+    lines: [line(9, "2026-01-02", "Accommodation", 19500, "Hotel in Kandy", "kandy.pdf")],
+  },
+);
+
+// People (prototype employees e1..e5). Maya is the signed-in employee; Ravi is the signed-in manager.
+const person = (n: number, name: string, email: string, managerId: string | null, managerName: string | null): Person => ({
+  id: n === 1 ? me.id : uid("e000", n), name, email, managerId, managerName,
+});
+const RAVI = 3, PRIYA = 4;
+const people: Person[] = [
+  person(1, "Maya Fernando", "maya@acme.example", uid("e000", RAVI), "Ravi Perera"),
+  person(2, "Dan Weerasinghe", "dan@acme.example", uid("e000", RAVI), "Ravi Perera"),
+  person(3, "Ravi Perera", "ravi@acme.example", uid("e000", PRIYA), "Priya Nair"),
+  person(4, "Priya Nair", "priya@acme.example", null, null),
+  person(5, "Ana Silva", "ana@acme.example", uid("e000", PRIYA), "Priya Nair"),
+];
+// Ravi's team is whoever the people list says reports to him, so a reassignment moves claims.
+const ravi = people[RAVI - 1];
+const teamClaims = (): StoredClaim[] => {
+  const names = people.filter((p) => p.managerId === ravi.id).map((p) => p.name);
+  return claims.filter((c) => c.status !== "Draft" && names.includes(c.employeeName));
+};
+const today = (): string => new Date().toISOString().slice(0, 10);
+const findTeam = (id: unknown): StoredClaim | undefined => teamClaims().find((c) => c.id === id);
+const notTeam = () => err(404, "Not found", "The claim does not exist or is not from your team.");
+const alreadyDecided = () => err(400, "Claim is decided", "Only a submitted claim can be decided.");
 
 let nextClaim = 1050;
 let nextLine = 100;
@@ -83,7 +126,8 @@ const err = (status: number, message: string, description?: string, extra?: obje
 const notFound = () => err(404, "Not found", "The claim does not exist or is not yours.");
 const decided = () => err(400, "Claim is decided", "Approved and exported claims can no longer be changed.");
 
-const find = (id: unknown): StoredClaim | undefined => claims.find((c) => c.id === id);
+const mine = (): StoredClaim[] => claims.filter((c) => c.employeeName === me.name);
+const find = (id: unknown): StoredClaim | undefined => mine().find((c) => c.id === id);
 const editable = (c: StoredClaim): boolean => c.status === "Draft" || c.status === "Submitted" || c.status === "Rejected";
 
 function lineFrom(id: string, input: LineInput): ExpenseLine | null {
@@ -102,7 +146,7 @@ export const handlers = [
   http.get("/api/me/claims", ({ request }) => {
     const status = new URL(request.url).searchParams.get("status");
     // Newest first: later claims are created at the end.
-    const data = claims.filter((c) => !status || c.status === status).map(summary).reverse();
+    const data = mine().filter((c) => !status || c.status === status).map(summary).reverse();
     return HttpResponse.json({ count: data.length, next: null, previous: null, data });
   }),
 
@@ -201,5 +245,56 @@ export const handlers = [
     c.status = "Draft";
     c.submittedOn = null;
     return HttpResponse.json(detail(c));
+  }),
+
+  http.get("/api/me/team/claims", ({ request }) => {
+    const status = new URL(request.url).searchParams.get("status");
+    const data = teamClaims()
+      .filter((c) => !status || c.status === status)
+      .sort((a, b) => (a.submittedOn ?? "").localeCompare(b.submittedOn ?? ""))
+      .map(summary);
+    return HttpResponse.json({ count: data.length, next: null, previous: null, data });
+  }),
+
+  http.get("/api/me/team/claims/:claimId", ({ params }) => {
+    const c = findTeam(params.claimId);
+    return c ? HttpResponse.json(detail(c)) : notTeam();
+  }),
+
+  http.post("/api/me/team/claims/:claimId/approve", ({ params }) => {
+    const c = findTeam(params.claimId);
+    if (!c) return notTeam();
+    if (c.status !== "Submitted") return alreadyDecided();
+    c.status = "Approved";
+    c.decidedOn = today();
+    c.rejectionReason = null;
+    return HttpResponse.json(detail(c));
+  }),
+
+  http.post("/api/me/team/claims/:claimId/reject", async ({ params, request }) => {
+    const c = findTeam(params.claimId);
+    if (!c) return notTeam();
+    const body = (await request.json()) as { reason?: string };
+    if (!body.reason?.trim()) return err(400, "Reason required", "Give the employee a reason for the rejection.");
+    if (c.status !== "Submitted") return alreadyDecided();
+    c.status = "Rejected";
+    c.decidedOn = today();
+    c.rejectionReason = body.reason.trim();
+    return HttpResponse.json(detail(c));
+  }),
+
+  http.get("/api/people", () => HttpResponse.json({ count: people.length, next: null, previous: null, data: people })),
+
+  http.put("/api/people/:personId/manager", async ({ params, request }) => {
+    const p = people.find((x) => x.id === params.personId);
+    if (!p) return err(404, "Not found", "The employee does not exist.");
+    const body = (await request.json()) as { managerId?: string | null };
+    const manager = body.managerId ? people.find((x) => x.id === body.managerId) : undefined;
+    if (body.managerId && !manager) return err(400, "Unknown manager", "Choose a manager from the list.");
+    if (manager && manager.id === p.id) return err(400, "Invalid manager", "An employee cannot be their own manager.");
+    p.managerId = manager?.id ?? null;
+    p.managerName = manager?.name ?? null;
+    if (p.id === me.id) me.managerName = p.managerName;
+    return HttpResponse.json(p);
   }),
 ];

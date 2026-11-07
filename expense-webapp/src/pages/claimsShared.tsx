@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type ReactElement } from "react";
-import { Chip } from "@wso2/oxygen-ui";
+import { Card, CardContent, Chip, Stack, Typography } from "@wso2/oxygen-ui";
 import { expenseApi } from "../api";
 import type { components } from "../generated/expense-api";
 
@@ -67,4 +67,65 @@ export function useMyClaim(claimId: string | undefined): {
     void reload();
   }, [reload]);
   return { state, reload, set: (value) => setState({ kind: "ready", value }) };
+}
+
+/** The caller's team claims (direct reports, never drafts), oldest submission first. */
+export function useTeamClaims(): { claims: ClaimSummary[] | null; failed: boolean; reload: () => Promise<void> } {
+  const [claims, setClaims] = useState<ClaimSummary[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  const reload = useCallback(async () => {
+    try {
+      const { data } = await expenseApi.GET("/me/team/claims", { params: { query: { limit: 100 } } });
+      if (data) {
+        setClaims(data.data);
+        setFailed(false);
+      } else setFailed(true);
+    } catch {
+      setFailed(true);
+    }
+  }, []);
+  useEffect(() => {
+    void reload();
+  }, [reload]);
+  return { claims, failed, reload };
+}
+
+/** Loads one claim of a direct report. */
+export function useTeamClaim(claimId: string | undefined): {
+  state: LoadState<ClaimDetail>;
+  set: (claim: ClaimDetail) => void;
+} {
+  const [state, setState] = useState<LoadState<ClaimDetail>>({ kind: "loading" });
+  useEffect(() => {
+    setState({ kind: "loading" });
+    if (!claimId) return setState({ kind: "notFound" });
+    void (async () => {
+      try {
+        const { data, response } = await expenseApi.GET("/me/team/claims/{claimId}", { params: { path: { claimId } } });
+        if (data) setState({ kind: "ready", value: data });
+        else setState({ kind: response.status === 404 ? "notFound" : "failed" });
+      } catch {
+        setState({ kind: "failed" });
+      }
+    })();
+  }, [claimId]);
+  return { state, set: (value) => setState({ kind: "ready", value }) };
+}
+
+/** A stat tile: overline label with icon, big value, caption. */
+export function StatTile({ label, value, hint, icon }: { label: string; value: number; hint: string; icon: ReactElement }): ReactElement {
+  return (
+    <Card variant="outlined">
+      <CardContent>
+        <Stack direction="row" spacing={1} alignItems="center">
+          {icon}
+          <Typography variant="overline">{label}</Typography>
+        </Stack>
+        <Typography variant="h4">{value}</Typography>
+        <Typography variant="caption" color="text.secondary">
+          {hint}
+        </Typography>
+      </CardContent>
+    </Card>
+  );
 }
